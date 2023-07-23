@@ -12,11 +12,6 @@ from pyquda import init
 os.environ["QUDA_RESOURCE_PATH"] = ".cache"
 init()
 
-Lx, Ly, Lz, Lt = 4, 4, 4, 8
-Nd, Ns, Nc = 4, 4, 3
-latt_size = [Lx, Ly, Lz, Lt]
-
-
 def applyDslash(Mp, p, U_seed):
     import cupy as cp
     from pyquda import core, quda
@@ -47,14 +42,15 @@ def applyDslash(Mp, p, U_seed):
     # Return gauge as a ndarray with shape (Nd, Lt, Lz, Ly, Lx, Ns, Ns)
     return U.lexico()
 
-
+Lx, Ly, Lz, Lt = 2, 2, 2, 2
+Lx, Ly, Lz, Lt = 4, 8, 16, 32
+Nd, Ns, Nc = 4, 4, 3
+latt_size = [Lx, Ly, Lz, Lt]
 p = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), np.complex128)
 p[0, 0, 0, 0, 0, 0] = 1
 Mp = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), np.complex128)
 _Mp = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), np.complex128)
-
-U = applyDslash(Mp, p, 0)
-
+U = applyDslash(Mp, p, 5)
 size = Lx*Ly*Lz*Lt*Ns*Nc
 size_U = Lx*Ly*Lz*Lt*Ns*Nc*Nc
 U_real = np.zeros(size_U, np.double)
@@ -79,7 +75,7 @@ for x in range(Lx):
                             index_U = x * Ly * Lz * Lt * Ns * Nc * Nc + y * Lz * Lt * Ns * Nc * Nc + \
                                 z * Lt * Ns * Nc * Nc + t * Ns * Nc * Nc + s * Nc * Nc + c0 * Nc + c1
                             U_real[index_U] = U[s, t, z, y, x,  c0, c1].real
-                            U_imag[index_U] = U[s, t, z, y, x,  c0, c1].imag
+                            U_imag[index_U] = U[s, t, z, y, x,  c0, c1].imag # what the fuck ?
 MAX_ITER = 1e6
 TOL = 1e-6
 test = False
@@ -106,10 +102,18 @@ for x in range(Lx):
                     for c0 in range(Nc):
                         index = x * Ly * Lz * Lt * Ns * Nc + y * Lz * Lt * Ns * \
                             Nc + z * Lt * Ns * Nc + t * Ns * Nc + s * Nc + c0
-
                         _Mp[t, z, y, x, s, c0] = complex(
                             Mp_real[index], Mp_imag[index])
-print(np.sum(Mp))
-print(np.sum(_Mp))
-print(Mp[0, 0, 0, 1])
-print(_Mp[0, 0, 0, 1])
+
+
+# print("np.sum(Mp[0, 0, 0, 1])",np.sum(Mp[0, 0, 0, 1]))
+# print("np.sum(Mp)",np.sum(Mp))
+# print("np.sum(_Mp[0, 0, 0, 1])",np.sum(_Mp[0, 0, 0, 1]))
+# print("np.sum(_Mp)",np.sum(_Mp))
+diff=Mp-_Mp
+print(np.std(diff))
+# print(np.sum(_Mp[0, 0, 0, 1]))
+# print(Mp[1, 0, 0, 1])
+# print(_Mp[1, 0, 0, 1])
+# print(Mp[0, 0, 0, 1])
+# print(_Mp[0, 0, 0, 1])
