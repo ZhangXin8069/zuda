@@ -12,6 +12,7 @@ from pyquda import init
 os.environ["QUDA_RESOURCE_PATH"] = ".cache"
 init()
 
+
 def applyDslash(Mp, p, U_seed):
     import cupy as cp
     from pyquda import core, quda
@@ -42,12 +43,19 @@ def applyDslash(Mp, p, U_seed):
     # Return gauge as a ndarray with shape (Nd, Lt, Lz, Ly, Lx, Ns, Ns)
     return U.lexico()
 
-Lx, Ly, Lz, Lt = 2, 2, 2, 2
-Lx, Ly, Lz, Lt = 4, 8, 16, 32
+
+Lx, Ly, Lz, Lt = 16, 16, 16, 32
 Nd, Ns, Nc = 4, 4, 3
 latt_size = [Lx, Ly, Lz, Lt]
 p = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), np.complex128)
 p[0, 0, 0, 0, 0, 0] = 1
+for x in range(Lx):
+    for y in range(Ly):
+        for z in range(Lz):
+            for t in range(Lt):
+                for s in range(Ns):
+                    for c0 in range(Nc):
+                        p[t, z, y, x, s, c0] = np.complex(np.random.randn(),np.random.randn())
 Mp = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), np.complex128)
 _Mp = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), np.complex128)
 U = applyDslash(Mp, p, 5)
@@ -75,7 +83,8 @@ for x in range(Lx):
                             index_U = x * Ly * Lz * Lt * Ns * Nc * Nc + y * Lz * Lt * Ns * Nc * Nc + \
                                 z * Lt * Ns * Nc * Nc + t * Ns * Nc * Nc + s * Nc * Nc + c0 * Nc + c1
                             U_real[index_U] = U[s, t, z, y, x,  c0, c1].real
-                            U_imag[index_U] = U[s, t, z, y, x,  c0, c1].imag # what the fuck ?
+                            U_imag[index_U] = U[s, t, z, y, x,
+                                                c0, c1].imag  # what the fuck ?
 MAX_ITER = 1e6
 TOL = 1e-6
 test = False
@@ -110,8 +119,9 @@ for x in range(Lx):
 # print("np.sum(Mp)",np.sum(Mp))
 # print("np.sum(_Mp[0, 0, 0, 1])",np.sum(_Mp[0, 0, 0, 1]))
 # print("np.sum(_Mp)",np.sum(_Mp))
-diff=Mp-_Mp
-print(np.std(diff))
+reduce = Mp-_Mp
+print("###reduce:", reduce[0, 0, 0, 1])
+print("###np.linalg.norm(reduce):", np.linalg.norm(reduce))
 # print(np.sum(_Mp[0, 0, 0, 1]))
 # print(Mp[1, 0, 0, 1])
 # print(_Mp[1, 0, 0, 1])
