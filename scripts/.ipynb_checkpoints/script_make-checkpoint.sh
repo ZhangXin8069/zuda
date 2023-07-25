@@ -7,7 +7,7 @@ popd
 
 # init
 _NAME=$(basename "$0")
-name='test_cpuX'
+name='test_zuda_cpuX'
 work_name="test"
 tmp_name="tmp"
 work_path=${_HOME}/${work_name}
@@ -27,7 +27,7 @@ popd
 
 # init
 _NAME=$(basename "$0")
-name='test_cuda'
+name='test_zuda_cuda'
 work_name="test"
 tmp_name="tmp"
 work_path=${_HOME}/${work_name}
