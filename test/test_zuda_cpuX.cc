@@ -3,7 +3,7 @@ int main(int argc, char **argv)
 {
     double start, end;
     int lat_x(16), lat_y(16), lat_z(16), lat_t(32), lat_s(4), lat_c(3);
-    int num_x(1), num_y(1), num_z(1), num_t(2);
+    int num_x(1), num_y(2), num_z(2), num_t(2);
     int MAX_ITER(1e6);
     double TOL(1e-12);
     LatticeGauge U(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);

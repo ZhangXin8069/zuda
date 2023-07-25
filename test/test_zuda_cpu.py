@@ -1,4 +1,4 @@
-import zuda_cpu
+from lib import zuda_cpu
 import os
 import sys
 
@@ -90,7 +90,7 @@ TOL = 1e-6
 test = False
 print("############ZUDA############")
 
-zuda.dslash_py(U_real,
+zuda_cpu.dslash_py(U_real,
                U_imag,
                p_real,
                p_imag,
