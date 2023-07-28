@@ -657,8 +657,7 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool &
     coef[1] = 1;
     Complex flag0;
     Complex flag1;
-    double start(0) ,end(0);
-    start = clock();
+    clock_t start = clock();
     for (int x = 0; x < U.lat_x; x++)
     {
         for (int y = 0; y < U.lat_y; y++)
@@ -927,7 +926,7 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool &
             }
         }
     }
-    end = clock();
+    clock_t end = clock();
     std::cout << "######time cost:" << (double)(end - start) / CLOCKS_PER_SEC << std::endl;
     std::cout << "######dest.norm_2():" << dest.norm_2() << std::endl;
 }

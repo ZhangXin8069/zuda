@@ -36,12 +36,10 @@ tmp_path=${_HOME}/${tmp_name}
 # do
 pushd ${tmp_path}
 echo "###${_NAME} is running...:$(date "+%Y-%m-%d-%H-%M-%S")###"
-for ((i = 0; i < 10; i++)); do
-       echo "making ${name}${i}.sh in ${tmp_path}"
-       echo "pushd ${tmp_path}" >${name}${i}.sh
-       echo "nvcc -o ${name}${i} ${work_path}/${name}${i}.cu && ./${name}${i}" >>${name}${i}.sh
-       echo "popd" >>${name}${i}.sh
-done
+echo "making ${name}.sh in ${tmp_path}"
+echo "pushd ${tmp_path}" >${name}.sh
+echo "nvcc -o ${name} ${work_path}/${name}.cu &&nvprof ./${name}" >>${name}.sh
+echo "popd" >>${name}.sh
 echo "###${_NAME} is done......:$(date "+%Y-%m-%d-%H-%M-%S")###"
 popd
 
