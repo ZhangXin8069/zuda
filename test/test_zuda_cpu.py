@@ -47,7 +47,7 @@ def applyDslash(Mp, p, U_seed):
 Lx, Ly, Lz, Lt = 16, 16, 16, 32
 Nd, Ns, Nc = 4, 4, 3
 latt_size = [Lx, Ly, Lz, Lt]
-p = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), np.complex128)
+p = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), complex)
 p[0, 0, 0, 0, 0, 0] = 1
 for x in range(Lx):
     for y in range(Ly):
