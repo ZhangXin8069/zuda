@@ -38,8 +38,7 @@ pushd ${tmp_path}
 echo "###${_NAME} is running...:$(date "+%Y-%m-%d-%H-%M-%S")###"
 echo "making ${name}.sh in ${tmp_path}"
 echo "pushd ${tmp_path}" >${name}.sh
-echo "nvcc -o ${name} ${work_path}/${name}.cu &&nvprof ./${name}" >>${name}.sh
+echo "nvcc -o ${name} ${work_path}/${name}.cu && nvprof ./${name}" >>${name}.sh
 echo "popd" >>${name}.sh
 echo "###${_NAME} is done......:$(date "+%Y-%m-%d-%H-%M-%S")###"
 popd
-
