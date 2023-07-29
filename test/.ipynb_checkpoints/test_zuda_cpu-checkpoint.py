@@ -12,7 +12,6 @@ from pyquda import init
 os.environ["QUDA_RESOURCE_PATH"] = ".cache"
 init()
 
-
 def applyDslash(Mp, p, U_seed):
     import cupy as cp
     from pyquda import core, quda
@@ -55,7 +54,7 @@ for x in range(Lx):
             for t in range(Lt):
                 for s in range(Ns):
                     for c0 in range(Nc):
-                        p[t, z, y, x, s, c0] = np.complex(np.random.randn(),np.random.randn())
+                        p[t, z, y, x, s, c0] = complex(np.random.randn(),np.random.randn())
 Mp = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), np.complex128)
 _Mp = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), np.complex128)
 U = applyDslash(Mp, p, 5)
@@ -87,9 +86,7 @@ for x in range(Lx):
                                                 c0, c1].imag  # what the fuck ?
 MAX_ITER = 1e6
 TOL = 1e-6
-test = False
 print("############ZUDA############")
-
 zuda_cpu.dslash_py(U_real,
                U_imag,
                p_real,
@@ -102,7 +99,7 @@ zuda_cpu.dslash_py(U_real,
                Lt,
                Ns,
                Nc,
-               test)
+               False)
 for x in range(Lx):
     for y in range(Ly):
         for z in range(Lz):

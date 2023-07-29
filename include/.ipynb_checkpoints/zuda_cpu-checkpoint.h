@@ -622,7 +622,7 @@ public:
         return result;
     }
 };
-void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest)
+void dslash_test(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest)
 {
     for (int i = 0; i < dest.size; i++)
     {
@@ -637,7 +637,7 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool &
     std::cout << "######src.norm_2():" << src.norm_2() << std::endl;
     if (test)
     {
-        dslash(U, src, dest);
+        dslash_test(U, src, dest);
         return;
     }
     dest.assign_zero();
@@ -665,7 +665,7 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool &
             for (int z = 0; z < U.lat_z; z++)
             {
                 for (int t = 0; t < U.lat_t; t++)
-                {
+                {                    
                     // mass term and others
                     for (int s = 0; s < U.lat_s; s++)
                     {
