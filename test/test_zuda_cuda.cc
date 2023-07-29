@@ -6,8 +6,8 @@
 #include <time.h>
 #include <random>
 #include <mpi.h>
-// #include "../include/zuda_cpu.h"
-// #include "../include/zuda_cuda.h"
+//#include "../include/zuda_cpu.h"
+//#include "../include/zuda_cuda.h"
 class Complex
 {
 public:
@@ -821,18 +821,14 @@ __host__ __device__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi
 
     dest.lattice_vec[0] *= 2;
 }
-__global__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const int *inthread_num, const int *inblock_num, const int *ingrid_num, const bool &test)
+__global__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest,const int &num_y, const int &num_z, const int &num_t, const bool &test)
 {
+
     if (test)
     {
         dslash(U, src, dest);
         return;
     }
-    int thread_index = threadIdx.x;
-    int grid_index = blockIdx.x;
-    int thread_size = blockDim.x;
-    int grid_size = gridDim.x;
-
     dest.assign_zero();
     const Complex i(0.0, 1.0);
     Complex tmp0[3];
@@ -1212,77 +1208,46 @@ __global__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, c
 //    }
 //    cg(U, b, x, num_x, num_y, num_z, num_t, MAX_ITER, TOL, test);
 //}
-__host__ void lattice_block(const int &lat_x, const int &lat_y, const int &lat_z, const int &lat_t, const int &maxThreadsPerBlock, const int &max_block_num, int &block_num, int *inthread_num, int *inblock_num, int *ingrid_num)
+
+// 矩阵类型，行优先，M(row, col) = *(M.elements + row * M.width + col)
+struct Matrix
 {
-    int tmp[5];
-    int inblock_log2(0);
-    int lat_log2[5];
-    tmp[0] = lat_x;
-    tmp[1] = lat_y;
-    tmp[2] = lat_z;
-    tmp[3] = lat_t;
-    tmp[4] = maxThreadsPerBlock;
-    lat_log2[4] = 0;
-    inblock_log2 = 0;
-    do
-    {
-        if (tmp[4] % 2)
-        {
-            break;
-        }
-        else
-        {
-            lat_log2[4] += 1;
-            tmp[4] /= 2;
-        }
-    } while (true);
-    for (int d = 0; d < 4; d++)
-    {
-        inthread_num[d] = 1;
-        inblock_num[d] = 1;
-        ingrid_num[d] = 1;
-        lat_log2[d] = 0;
-        do
-        {
-            std::cout << "tmp[" << d << "]:" << tmp[d] << std::endl;
-            if (tmp[d] % 2)
-            {
-                inthread_num[d] *= tmp[d];
-                std::cout << " inthread_num[" << d << "]:" << inthread_num[d] << std::endl;
-                break;
-            }
-            else
-            {
-                tmp[d] /= 2;
-                lat_log2[d] += 1;
-                std::cout << "lat_log2[" << d << "]:" << lat_log2[d] << std::endl;
-                inblock_log2 += 1;
-                std::cout << "inblock_log2:" << inblock_log2 << std::endl;
-                if (inblock_log2 == lat_log2[4] + 1)
-                {
-                    inblock_log2 -= 1;
-                    block_num *= 2;
-                    if (block_num > max_block_num)
-                    {
-                        block_num /= 2;
-                        ingrid_num[d] /= 2;
-                        inthread_num[d] *= 2;
-                        std::cout << " inthread_num[" << d << "]:" << inthread_num[d] << std::endl;
-                    }
-                    std::cout << " block_num:" << block_num << std::endl;
-                    ingrid_num[d] *= 2;
-                    std::cout << " ingrid_num[" << d << "]:" << ingrid_num[d] << std::endl;
-                    continue;
-                }
-                inblock_num[d] *= 2;
-                std::cout << " inblock_num[" << d << "]:" << inblock_num[d] << std::endl;
-            }
-        } while (true);
-    }
+    int width;
+    int height;
+    float *elements;
+};
+
+// 获取矩阵A的(row, col)元素
+__device__ float getElement(Matrix *A, int row, int col)
+{
+	return A->elements[row * A->width + col];
+}
+
+// 为矩阵A的(row, col)元素赋值
+__device__ void setElement(Matrix *A, int row, int col, float value)
+{
+	A->elements[row * A->width + col] = value;
+}
+
+// 矩阵相乘kernel，2-D，每个线程计算一个元素
+__global__ void matMulKernel(Matrix *A, Matrix *B, Matrix *C)
+{
+	float Cvalue = 0.0;
+	int row = threadIdx.y + blockIdx.y * blockDim.y;
+	int col = threadIdx.x + blockIdx.x * blockDim.x;
+	for (int i = 0; i < A->width; ++i)
+	{
+		Cvalue += getElement(A, row, i) * getElement(B, i, col);
+	}
+	setElement(C, row, col, Cvalue);
+}
+__host__ int* lattice_block(const int &lat_x, const int &lat_y, const int &lat_z, const int &lat_t, const int &lat_s, const int &lat_c,const int &maxThreadsPerBlock){
+
+
 }
 int main()
 {
-    // MPI_Init(NULL, NULL);
+    //MPI_Init(NULL, NULL);
     int dev = 0;
     cudaDeviceProp devProp;
     cudaGetDeviceProperties(&devProp, dev);
@@ -1293,54 +1258,77 @@ int main()
     std::cout << "The maximum number of threads per EM:" << devProp.maxThreadsPerMultiProcessor << std::endl;
     std::cout << "Maximum number of warps per EM:" << devProp.maxThreadsPerMultiProcessor / 32 << std::endl;
 
-    int lat_x(32);
-    int lat_y(32);
-    int lat_z(32);
+    int lat_x(16);
+    int lat_y(16);
+    int lat_z(16);
     int lat_t(32);
     int lat_s(4);
     int lat_c(3);
-    // int MAX_ITER(1e6);
-    // double TOL(1e-6);
+    //int MAX_ITER(1e6);
+    //double TOL(1e-6);
     LatticeGauge U(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
     LatticeFermi src(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
     LatticeFermi dest(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
-    cudaMallocManaged((void **)&U, sizeof(LatticeGauge));
-    cudaMallocManaged((void **)&src, sizeof(LatticeFermi));
-    cudaMallocManaged((void **)&dest, sizeof(LatticeFermi));
+    cudaMallocManaged((void**)&U, sizeof(LatticeGauge));
+    cudaMallocManaged((void**)&src, sizeof(LatticeFermi));
+    cudaMallocManaged((void**)&dest, sizeof(LatticeFermi));
     U.assign_random();
     src.assign_random();
     dest.assign_zero();
-    int inthread_num[4];
-    int inblock_num[4];
-    int ingrid_num[4];
-    int block_num(1);
-    int max_block_num(32 * 64);
-    lattice_block(lat_x, lat_y, lat_z, lat_t, devProp.maxThreadsPerBlock, max_block_num, block_num, inthread_num, inblock_num, ingrid_num);
-    dim3 gridSize(block_num);
+    devProp.maxThreadsPerBlock;
     dim3 blockSize(devProp.maxThreadsPerBlock);
-    std::cout << " block_num:" << block_num << std::endl;
-    for (int d = 0; d < 4; d++)
-    {
-        std::cout << "################" << std::endl;
-        std::cout << " inthread_num[" << d << "]:" << inthread_num[d] << std::endl;
-        std::cout << " inblock_num[" << d << "]:" << inblock_num[d] << std::endl;
-        std::cout << " ingrid_num[" << d << "]:" << ingrid_num[d] << std::endl;
-    }
-    std::cout << "src.norm_2():" << src.norm_2() << std::endl;
-    std::cout << "dest.norm_2():" << dest.norm_2() << std::endl;
+    dim3 gridSize();
     clock_t start = clock();
-    dslash<<<gridSize, blockSize>>>(U, src, dest, inthread_num, inblock_num, ingrid_num, false);
-    ;
-    cudaDeviceSynchronize();
+    dslash<< < gridSize_, blockSize_ >> >(U, src, dest, num_x, num_y, num_z, num_t, false);;
     clock_t end = clock();
-    std::cout << "src.norm_2():" << src.norm_2() << std::endl;
-    std::cout << "dest.norm_2():" << dest.norm_2() << std::endl;
     std::cout
         << "################"
         << "time cost:"
         << (double)(end - start) / CLOCKS_PER_SEC
         << "s"
         << std::endl;
-    // MPI_Finalize();
+    //MPI_Finalize();
+
+    int width = 1 << 10;
+    int height = 1 << 10;
+    Matrix *A, *B, *C;
+    // 申请托管内存
+    cudaMallocManaged((void**)&A, sizeof(Matrix));
+    cudaMallocManaged((void**)&B, sizeof(Matrix));
+    cudaMallocManaged((void**)&C, sizeof(Matrix));
+    int nBytes = width * height * sizeof(float);
+    cudaMallocManaged((void**)&A->elements, nBytes);
+    cudaMallocManaged((void**)&B->elements, nBytes);
+    cudaMallocManaged((void**)&C->elements, nBytes);
+
+    // 初始化数据
+    A->height = height;
+    A->width = width;
+    B->height = height;
+    B->width = width;
+    C->height = height;
+    C->width = width;
+    for (int i = 0; i < width * height; ++i)
+    {
+        A->elements[i] = 1.0;
+        B->elements[i] = 2.0;
+    }
+
+    // 定义kernel的执行配置
+    dim3 blockSize_(32, 32);
+    dim3 gridSize_((width + blockSize_.x - 1) / blockSize_.x, 
+        (height + blockSize_.y - 1) / blockSize_.y);
+    // 执行kernel
+    matMulKernel << < gridSize_, blockSize_ >> >(A, B, C);
+
+
+    // 同步device 保证结果能正确访问
+    cudaDeviceSynchronize();
+    // 检查执行结果
+    float maxError = 0.0;
+    for (int i = 0; i < width * height; ++i)
+        maxError = fmax(maxError, fabs(C->elements[i] - 2 * width));
+    std::cout << "最大误差: " << maxError << std::endl;
+
     return 0;
 }
