@@ -11,92 +11,94 @@
 class Complex
 {
 public:
-    double data[2];
+    // double data[2];
+    double real;
+    double imag;
     __host__ __device__ Complex(double real = 0.0, double imag = 0.0)
     {
-        this->data[0] = real;
-        this->data[1] = imag;
+        this->real = real;
+        this->imag = imag;
     }
     __host__ __device__ Complex &operator=(const Complex &other)
     {
         if (this != &other)
         {
-            this->data[0] = other.data[0];
-            this->data[1] = other.data[1];
+            this->real = other.real;
+            this->imag = other.imag;
         }
         return *this;
     }
     __host__ __device__ Complex operator+(const Complex &other) const
     {
-        return Complex(this->data[0] + other.data[0], this->data[1] + other.data[1]);
+        return Complex(this->real + other.real, this->imag + other.imag);
     }
     __host__ __device__ Complex operator-(const Complex &other) const
     {
-        return Complex(this->data[0] - other.data[0], this->data[1] - other.data[1]);
+        return Complex(this->real - other.real, this->imag - other.imag);
     }
     __host__ __device__ Complex operator*(const Complex &other) const
     {
-        return Complex(this->data[0] * other.data[0] - this->data[1] * other.data[1],
-                       this->data[0] * other.data[1] + this->data[1] * other.data[0]);
+        return Complex(this->real * other.real - this->imag * other.imag,
+                       this->real * other.imag + this->imag * other.real);
     }
     __host__ __device__ Complex operator*(const double &other) const
     {
-        return Complex(this->data[0] * other, this->data[1] * other);
+        return Complex(this->real * other, this->imag * other);
     }
     __host__ __device__ Complex operator/(const Complex &other) const
     {
-        double denom = other.data[0] * other.data[0] + other.data[1] * other.data[1];
-        return Complex((this->data[0] * other.data[0] + this->data[1] * other.data[1]) / denom,
-                       (this->data[1] * other.data[0] - this->data[0] * other.data[1]) / denom);
+        double denom = other.real * other.real + other.imag * other.imag;
+        return Complex((this->real * other.real + this->imag * other.imag) / denom,
+                       (this->imag * other.real - this->real * other.imag) / denom);
     }
     __host__ __device__ Complex operator/(const double &other) const
     {
-        return Complex(this->data[0] / other, this->data[1] / other);
+        return Complex(this->real / other, this->imag / other);
     }
     __host__ __device__ Complex operator-() const
     {
-        return Complex(-this->data[0], -this->data[1]);
+        return Complex(-this->real, -this->imag);
     }
     __host__ __device__ Complex &operator+=(const Complex &other)
     {
-        this->data[0] += other.data[0];
-        this->data[1] += other.data[1];
+        this->real += other.real;
+        this->imag += other.imag;
         return *this;
     }
     __host__ __device__ Complex &operator-=(const Complex &other)
     {
-        this->data[0] -= other.data[0];
-        this->data[1] -= other.data[1];
+        this->real -= other.real;
+        this->imag -= other.imag;
         return *this;
     }
     __host__ __device__ Complex &operator*=(const Complex &other)
     {
-        this->data[0] = this->data[0] * other.data[0] - this->data[1] * other.data[1];
-        this->data[1] = this->data[0] * other.data[1] + this->data[1] * other.data[0];
+        this->real = this->real * other.real - this->imag * other.imag;
+        this->imag = this->real * other.imag + this->imag * other.real;
         return *this;
     }
     __host__ __device__ Complex &operator*=(const double &scalar)
     {
-        this->data[0] *= scalar;
-        this->data[1] *= scalar;
+        this->real *= scalar;
+        this->imag *= scalar;
         return *this;
     }
     __host__ __device__ Complex &operator/=(const Complex &other)
     {
-        double denom = other.data[0] * other.data[0] + other.data[1] * other.data[1];
-        this->data[0] = (data[0] * other.data[0] + data[1] * other.data[1]) / denom;
-        this->data[1] = (data[1] * other.data[0] - data[0] * other.data[1]) / denom;
+        double denom = other.real * other.real + other.imag * other.imag;
+        this->real = (real * other.real + imag * other.imag) / denom;
+        this->imag = (imag * other.real - real * other.imag) / denom;
         return *this;
     }
     __host__ __device__ Complex &operator/=(const double &other)
     {
-        this->data[0] /= other;
-        this->data[1] /= other;
+        this->real /= other;
+        this->imag /= other;
         return *this;
     }
     __host__ __device__ bool operator==(const Complex &other) const
     {
-        return (this->data[0] == other.data[0] && this->data[1] == other.data[1]);
+        return (this->real == other.real && this->imag == other.imag);
     }
     __host__ __device__ bool operator!=(const Complex &other) const
     {
@@ -104,19 +106,19 @@ public:
     }
     __host__ friend std::ostream &operator<<(std::ostream &os, const Complex &c)
     {
-        if (c.data[1] >= 0.0)
+        if (c.imag >= 0.0)
         {
-            os << c.data[0] << " + " << c.data[1] << "i";
+            os << c.real << " + " << c.imag << "i";
         }
         else
         {
-            os << c.data[0] << " - " << std::abs(c.data[1]) << "i";
+            os << c.real << " - " << std::abs(c.imag) << "i";
         }
         return os;
     }
     __host__ __device__ Complex conj()
     {
-        return Complex(this->data[0], -this->data[1]);
+        return Complex(this->real, -this->imag);
     }
 };
 
@@ -163,16 +165,16 @@ public:
     {
         for (int i = 0; i < this->size; i++)
         {
-            this->lattice_vec[i].data[0] = 0;
-            this->lattice_vec[i].data[1] = 0;
+            this->lattice_vec[i].real = 0;
+            this->lattice_vec[i].imag = 0;
         }
     }
     __host__ __device__ void assign_unit()
     {
         for (int i = 0; i < this->size; i++)
         {
-            this->lattice_vec[i].data[0] = 1;
-            this->lattice_vec[i].data[1] = 0;
+            this->lattice_vec[i].real = 1;
+            this->lattice_vec[i].imag = 0;
         }
     }
     __host__ void assign_random(unsigned seed = 32767)
@@ -181,8 +183,8 @@ public:
         std::uniform_real_distribution<double> u(0.0, 1.0);
         for (int i = 0; i < this->size; i++)
         {
-            this->lattice_vec[i].data[0] = u(e);
-            this->lattice_vec[i].data[1] = u(e);
+            this->lattice_vec[i].real = u(e);
+            this->lattice_vec[i].imag = u(e);
         }
     }
     __host__ __device__ const Complex &operator[](const int &index) const
@@ -333,7 +335,7 @@ public:
         double result = 0;
         for (int i = 0; i < this->size; i++)
         {
-            result = result + this->lattice_vec[i].data[0] * this->lattice_vec[i].data[0] + this->lattice_vec[i].data[1] * this->lattice_vec[i].data[1];
+            result = result + this->lattice_vec[i].real * this->lattice_vec[i].real + this->lattice_vec[i].imag * this->lattice_vec[i].imag;
         }
         return result;
     }
@@ -518,16 +520,16 @@ public:
     {
         for (int i = 0; i < this->size; i++)
         {
-            this->lattice_vec[i].data[0] = 0;
-            this->lattice_vec[i].data[1] = 0;
+            this->lattice_vec[i].real = 0;
+            this->lattice_vec[i].imag = 0;
         }
     }
     __host__ __device__ void assign_unit()
     {
         for (int i = 0; i < this->size; i++)
         {
-            this->lattice_vec[i].data[0] = 1;
-            this->lattice_vec[i].data[1] = 0;
+            this->lattice_vec[i].real = 1;
+            this->lattice_vec[i].imag = 0;
         }
     }
     __host__ void assign_random(unsigned seed = 32767)
@@ -536,8 +538,8 @@ public:
         std::uniform_real_distribution<double> u(0.0, 1.0);
         for (int i = 0; i < this->size; i++)
         {
-            this->lattice_vec[i].data[0] = u(e);
-            this->lattice_vec[i].data[1] = u(e);
+            this->lattice_vec[i].real = u(e);
+            this->lattice_vec[i].imag = u(e);
         }
     }
     __host__ __device__ const Complex &operator[](const int &index) const
@@ -691,7 +693,7 @@ public:
         double result = 0;
         for (int i = 0; i < this->size; i++)
         {
-            result = result + this->lattice_vec[i].data[0] * this->lattice_vec[i].data[0] + this->lattice_vec[i].data[1] * this->lattice_vec[i].data[1];
+            result = result + this->lattice_vec[i].real * this->lattice_vec[i].real + this->lattice_vec[i].imag * this->lattice_vec[i].imag;
         }
         return result;
     }
@@ -812,7 +814,7 @@ public:
         return result;
     }
 };
-__host__ __device__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest)
+__host__ __device__ void dslash_test(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest)
 {
     for (int i = 0; i < dest.size; i++)
     {
@@ -825,7 +827,7 @@ __global__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, c
 {
     if (test)
     {
-        dslash(U, src, dest);
+        dslash_test(U, src, dest);
         return;
     }
     int thread_index = threadIdx.x;
@@ -833,7 +835,7 @@ __global__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, c
     int thread_size = blockDim.x;
     int grid_size = gridDim.x;
 
-    dest.assign_unit();
+    dest.assign_zero();
     const Complex i(0.0, 1.0);
     Complex tmp0[3];
     Complex tmp1[3];
@@ -1181,15 +1183,15 @@ __global__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, c
 //    LatticeFermi dest(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
 //    for (int i = 0; i < U.size; i++)
 //    {
-//        U[i].data[0] = U_real[i];
-//        U[i].data[1] = U_imag[i];
+//        U[i].real = U_real[i];
+//        U[i].imag = U_imag[i];
 //    }
 //    for (int i = 0; i < src.size; i++)
 //    {
-//        src[i].data[0] = src_real[i];
-//        src[i].data[1] = src_imag[i];
-//        dest[i].data[0] = dest_real[i];
-//        dest[i].data[1] = dest_imag[i];
+//        src[i].real = src_real[i];
+//        src[i].imag = src_imag[i];
+//        dest[i].real = dest_real[i];
+//        dest[i].imag = dest_imag[i];
 //    }
 //    dslash(U, src, dest,test);;
 //}
@@ -1200,15 +1202,15 @@ __global__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, c
 //    LatticeFermi x(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
 //    for (int i = 0; i < U.size; i++)
 //    {
-//        U[i].data[0] = U_real[i];
-//        U[i].data[1] = U_imag[i];
+//        U[i].real = U_real[i];
+//        U[i].imag = U_imag[i];
 //    }
 //    for (int i = 0; i < b.size; i++)
 //    {
-//        b[i].data[0] = b_real[i];
-//        b[i].data[1] = b_imag[i];
-//        x[i].data[0] = x_real[i];
-//        x[i].data[1] = x_imag[i];
+//        b[i].real = b_real[i];
+//        b[i].imag = b_imag[i];
+//        x[i].real = x_real[i];
+//        x[i].imag = x_imag[i];
 //    }
 //    cg(U, b, x, num_x, num_y, num_z, num_t, MAX_ITER, TOL, test);
 //}
@@ -1280,6 +1282,39 @@ __host__ void lattice_block(const int &lat_x, const int &lat_y, const int &lat_z
         } while (true);
     }
 }
+
+// 矩阵类型，行优先，M(row, col) = *(M.elements + row * M.width + col)
+struct Matrix
+{
+    int width;
+    int height;
+    float *elements;
+};
+// 获取矩阵A的(row, col)元素
+__device__ float getElement(Matrix *A, int row, int col)
+{
+    return A->elements[row * A->width + col];
+}
+
+// 为矩阵A的(row, col)元素赋值
+__device__ void setElement(Matrix *A, int row, int col, float value)
+{
+    A->elements[row * A->width + col] = value;
+}
+
+// 矩阵相乘kernel，2-D，每个线程计算一个元素
+__global__ void matMulKernel(Matrix *A, Matrix *B, Matrix *C)
+{
+    float Cvalue = 0.0;
+    int row = threadIdx.y + blockIdx.y * blockDim.y;
+    int col = threadIdx.x + blockIdx.x * blockDim.x;
+    for (int i = 0; i < A->width; ++i)
+    {
+        Cvalue += getElement(A, row, i) * getElement(B, i, col);
+    }
+    setElement(C, row, col, Cvalue);
+}
+
 int main()
 {
     // MPI_Init(NULL, NULL);
@@ -1293,35 +1328,103 @@ int main()
     std::cout << "The maximum number of threads per EM:" << devProp.maxThreadsPerMultiProcessor << std::endl;
     std::cout << "Maximum number of warps per EM:" << devProp.maxThreadsPerMultiProcessor / 32 << std::endl;
 
-    int lat_x(16);
-    int lat_y(16);
-    int lat_z(16);
+    int width = 1 << 10;
+    int height = 1 << 10;
+    Matrix *A, *B, *C;
+    // 申请托管内存
+    cudaMallocManaged((void **)&A, sizeof(Matrix));
+    cudaMallocManaged((void **)&B, sizeof(Matrix));
+    cudaMallocManaged((void **)&C, sizeof(Matrix));
+    int nBytes = width * height * sizeof(float);
+    cudaMallocManaged((void **)&A->elements, nBytes);
+    cudaMallocManaged((void **)&B->elements, nBytes);
+    cudaMallocManaged((void **)&C->elements, nBytes);
+
+    // 初始化数据
+    A->height = height;
+    A->width = width;
+    B->height = height;
+    B->width = width;
+    C->height = height;
+    C->width = width;
+    for (int i = 0; i < width * height; ++i)
+    {
+        A->elements[i] = 1.0;
+        B->elements[i] = 2.0;
+    }
+
+    // 定义kernel的执行配置
+    dim3 blockSize(32, 32);
+    dim3 gridSize((width + blockSize.x - 1) / blockSize.x,
+                  (height + blockSize.y - 1) / blockSize.y);
+    // 执行kernel
+    matMulKernel<<<gridSize, blockSize>>>(A, B, C);
+
+    // 同步device 保证结果能正确访问
+    cudaDeviceSynchronize();
+    // 检查执行结果
+    float maxError = 0.0;
+    for (int i = 0; i < width * height; ++i)
+        maxError = fmax(maxError, fabs(C->elements[i] - 2 * width));
+    std::cout << "最大误差: " << maxError << std::endl;
+
+    int lat_x(32);
+    int lat_y(33);
+    int lat_z(128);
     int lat_t(32);
     int lat_s(4);
     int lat_c(3);
+    int size = lat_x * lat_y * lat_z * lat_t * lat_s * lat_c;
     // int MAX_ITER(1e6);
     // double TOL(1e-6);
-    LatticeGauge U(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
-    LatticeFermi src(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
-    LatticeFermi dest(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
-    cudaMallocManaged((void **)&U, sizeof(LatticeGauge));
-    cudaMallocManaged((void **)&src, sizeof(LatticeFermi));
-    cudaMallocManaged((void **)&dest, sizeof(LatticeFermi));
-    cudaMallocManaged((void **)&U.lattice_vec, U.size * 2 * sizeof(double));
-    cudaMallocManaged((void **)&src.lattice_vec, src.size * 2 * sizeof(double));
-    cudaMallocManaged((void **)&dest.lattice_vec, dest.size * 2 * sizeof(double));
+    LatticeGauge *_U;
+    LatticeFermi *_src;
+    LatticeFermi *_dest;
 
-    U.assign_random();
-    src.assign_random();
+    cudaMallocManaged(&_U, sizeof(LatticeGauge));
+    cudaMallocManaged(&_src, sizeof(LatticeFermi));
+    cudaMallocManaged(&_dest, sizeof(LatticeFermi));
+    cudaMallocManaged(&_U->lattice_vec, 3 * size * 2 * sizeof(double));
+    cudaMallocManaged(&_src->lattice_vec, size * 2 * sizeof(double));
+    cudaMallocManaged(&_dest->lattice_vec, size * 2 * sizeof(double));
+    LatticeGauge &U = *_U;
+    LatticeFermi &src = *_src;
+    LatticeFermi &dest = *_dest;
+    U.lat_x = lat_x;
+    U.lat_y = lat_y;
+    U.lat_z = lat_z;
+    U.lat_t = lat_t;
+    U.lat_s = lat_s;
+    U.lat_c0 = lat_c;
+    U.lat_c1 = lat_c;
+    U.size = U.lat_x * U.lat_y * U.lat_z * U.lat_t * U.lat_s * U.lat_c0 * U.lat_c1;
+    src.lat_x = lat_x;
+    src.lat_y = lat_y;
+    src.lat_z = lat_z;
+    src.lat_t = lat_t;
+    src.lat_s = lat_s;
+    src.lat_c = lat_c;
+    src.size = src.lat_x * src.lat_y * src.lat_z * src.lat_t * src.lat_s * src.lat_c;
+    dest.lat_x = lat_x;
+    dest.lat_y = lat_y;
+    dest.lat_z = lat_z;
+    dest.lat_t = lat_t;
+    dest.lat_s = lat_s;
+    dest.lat_c = lat_c;
+    dest.size = dest.lat_x * dest.lat_y * dest.lat_z * dest.lat_t * dest.lat_s * dest.lat_c;
+    cudaDeviceSynchronize();
+    U.assign_random(666);
+    src.assign_random(111);
     dest.assign_zero();
+    cudaDeviceSynchronize();
     int inthread_num[4];
     int inblock_num[4];
     int ingrid_num[4];
     int block_num(1);
     int max_block_num(32 * 64);
     lattice_block(lat_x, lat_y, lat_z, lat_t, devProp.maxThreadsPerBlock, max_block_num, block_num, inthread_num, inblock_num, ingrid_num);
-    dim3 gridSize(block_num);
-    dim3 blockSize(devProp.maxThreadsPerBlock);
+    dim3 gridSize_(block_num);
+    dim3 blockSize_(devProp.maxThreadsPerBlock);
     std::cout << " block_num:" << block_num << std::endl;
     for (int d = 0; d < 4; d++)
     {
@@ -1333,7 +1436,7 @@ int main()
     std::cout << "src.norm_2():" << src.norm_2() << std::endl;
     std::cout << "dest.norm_2():" << dest.norm_2() << std::endl;
     clock_t start = clock();
-    dslash<<<gridSize, blockSize>>>(U, src, dest, inthread_num, inblock_num, ingrid_num, false);
+    dslash<<<gridSize_, blockSize_>>>(U, src, dest, inthread_num, inblock_num, ingrid_num, false);
     cudaDeviceSynchronize();
     clock_t end = clock();
     std::cout << "src.norm_2():" << src.norm_2() << std::endl;
@@ -1344,6 +1447,6 @@ int main()
         << (double)(end - start) / CLOCKS_PER_SEC
         << "s"
         << std::endl;
-    // MPI_Finalize();
+    //// MPI_Finalize();
     return 0;
 }
