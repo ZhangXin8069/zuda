@@ -832,6 +832,8 @@ __global__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, c
     }
     int thread_index = threadIdx.x;
     int grid_index = blockIdx.x;
+    int thread_size = blockDim.x;
+    int grid_size = gridDim.x;
 
     dest.assign_zero();
     dest.assign_unit(); // test
@@ -851,6 +853,7 @@ __global__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, c
     coef[1] = 1;
     Complex flag0;
     Complex flag1;
+    /*
     for (int x = 0; x < U.lat_x; x++)
     {
         for (int y = 0; y < U.lat_y; y++)
@@ -1119,6 +1122,7 @@ __global__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, c
             }
         }
     }
+    */
 }
 
 //__host__ void cg(LatticeGauge &U, LatticeFermi &b, LatticeFermi &x, const int &num_x, const int &num_y, const int &num_z, const int &num_t, const int &MAX_ITER, const double &TOL, const double &test)
@@ -1316,56 +1320,56 @@ __global__ void matMulKernel(Matrix *A, Matrix *B, Matrix *C)
 
 int main()
 {
-    // // MPI_Init(NULL, NULL);
-    // int dev = 0;
-    // cudaDeviceProp devProp;
-    // cudaGetDeviceProperties(&devProp, dev);
-    // std::cout << "Use GPU device " << dev << ": " << devProp.name << std::endl;
-    // std::cout << "Number of SMs:" << devProp.multiProcessorCount << std::endl;
-    // std::cout << "Shared memory size of each thread block:" << devProp.sharedMemPerBlock / 1024.0 << "KB" << std::endl;
-    // std::cout << "The maximum number of threads per thread block:" << devProp.maxThreadsPerBlock << std::endl;
-    // std::cout << "The maximum number of threads per EM:" << devProp.maxThreadsPerMultiProcessor << std::endl;
-    // std::cout << "Maximum number of warps per EM:" << devProp.maxThreadsPerMultiProcessor / 32 << std::endl;
+    // MPI_Init(NULL, NULL);
+    int dev = 0;
+    cudaDeviceProp devProp;
+    cudaGetDeviceProperties(&devProp, dev);
+    std::cout << "Use GPU device " << dev << ": " << devProp.name << std::endl;
+    std::cout << "Number of SMs:" << devProp.multiProcessorCount << std::endl;
+    std::cout << "Shared memory size of each thread block:" << devProp.sharedMemPerBlock / 1024.0 << "KB" << std::endl;
+    std::cout << "The maximum number of threads per thread block:" << devProp.maxThreadsPerBlock << std::endl;
+    std::cout << "The maximum number of threads per EM:" << devProp.maxThreadsPerMultiProcessor << std::endl;
+    std::cout << "Maximum number of warps per EM:" << devProp.maxThreadsPerMultiProcessor / 32 << std::endl;
 
-    // int width = 1 << 10;
-    // int height = 1 << 10;
-    // Matrix *A, *B, *C;
-    // // 申请托管内存
-    // cudaMallocManaged((void **)&A, sizeof(Matrix));
-    // cudaMallocManaged((void **)&B, sizeof(Matrix));
-    // cudaMallocManaged((void **)&C, sizeof(Matrix));
-    // int nBytes = width * height * sizeof(float);
-    // cudaMallocManaged((void **)&A->elements, nBytes);
-    // cudaMallocManaged((void **)&B->elements, nBytes);
-    // cudaMallocManaged((void **)&C->elements, nBytes);
+    int width = 1 << 10;
+    int height = 1 << 10;
+    Matrix *A, *B, *C;
+    // 申请托管内存
+    cudaMallocManaged((void **)&A, sizeof(Matrix));
+    cudaMallocManaged((void **)&B, sizeof(Matrix));
+    cudaMallocManaged((void **)&C, sizeof(Matrix));
+    int nBytes = width * height * sizeof(float);
+    cudaMallocManaged((void **)&A->elements, nBytes);
+    cudaMallocManaged((void **)&B->elements, nBytes);
+    cudaMallocManaged((void **)&C->elements, nBytes);
 
-    // // 初始化数据
-    // A->height = height;
-    // A->width = width;
-    // B->height = height;
-    // B->width = width;
-    // C->height = height;
-    // C->width = width;
-    // for (int i = 0; i < width * height; ++i)
-    // {
-    //     A->elements[i] = 1.0;
-    //     B->elements[i] = 2.0;
-    // }
+    // 初始化数据
+    A->height = height;
+    A->width = width;
+    B->height = height;
+    B->width = width;
+    C->height = height;
+    C->width = width;
+    for (int i = 0; i < width * height; ++i)
+    {
+        A->elements[i] = 1.0;
+        B->elements[i] = 2.0;
+    }
 
-    // // 定义kernel的执行配置
-    // dim3 blockSize(32, 32);
-    // dim3 gridSize((width + blockSize.x - 1) / blockSize.x,
-    //               (height + blockSize.y - 1) / blockSize.y);
-    // // 执行kernel
-    // matMulKernel<<<gridSize, blockSize>>>(A, B, C);
+    // 定义kernel的执行配置
+    dim3 blockSize(32, 32);
+    dim3 gridSize((width + blockSize.x - 1) / blockSize.x,
+                  (height + blockSize.y - 1) / blockSize.y);
+    // 执行kernel
+    matMulKernel<<<gridSize, blockSize>>>(A, B, C);
 
-    // // 同步device 保证结果能正确访问
-    // cudaDeviceSynchronize();
-    // // 检查执行结果
-    // float maxError = 0.0;
-    // for (int i = 0; i < width * height; ++i)
-    //     maxError = fmax(maxError, fabs(C->elements[i] - 2 * width));
-    // std::cout << "最大误差: " << maxError << std::endl;
+    // 同步device 保证结果能正确访问
+    cudaDeviceSynchronize();
+    // 检查执行结果
+    float maxError = 0.0;
+    for (int i = 0; i < width * height; ++i)
+        maxError = fmax(maxError, fabs(C->elements[i] - 2 * width));
+    std::cout << "最大误差: " << maxError << std::endl;
 
     int lat_x(16);
     int lat_y(16);
@@ -1435,7 +1439,7 @@ int main()
     std::cout << "src.norm_2():" << src.norm_2() << std::endl;
     std::cout << "dest.norm_2():" << dest.norm_2() << std::endl;
     clock_t start = clock();
-    dslash<<<gridSize_, blockSize_>>>(U, src, dest, inthread_num, inblock_num, ingrid_num, test);
+    dslash<<<gridSize_, blockSize_>>>(U, src, dest, inthread_num, inblock_num, ingrid_num,test);
     cudaDeviceSynchronize();
     clock_t end = clock();
     std::cout << "src.norm_2():" << src.norm_2() << std::endl;
