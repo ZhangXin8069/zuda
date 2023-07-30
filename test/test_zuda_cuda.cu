@@ -922,7 +922,7 @@ int main()
     int lat_x(16);
     int lat_y(16);
     int lat_z(16);
-    int lat_t(32);
+    int lat_t(16);
     int lat_s(4);
     int lat_c(3);
     int size = lat_x * lat_y * lat_z * lat_t * lat_s * lat_c;

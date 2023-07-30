@@ -43,7 +43,7 @@ def applyDslash(Mp, p, U_seed):
     return U.lexico()
 
 
-Lx, Ly, Lz, Lt = 16, 16, 16, 32
+Lx, Ly, Lz, Lt = 16, 16, 16, 16
 Nd, Ns, Nc = 4, 4, 3
 latt_size = [Lx, Ly, Lz, Lt]
 p = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), np.complex128)

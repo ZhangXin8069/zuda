@@ -631,7 +631,7 @@ void dslash_test(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest)
 
     dest.lattice_vec[0] *= 2;
 }
-void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool &test)
+void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool test)
 {
     std::cout << "######U.norm_2():" << U.norm_2() << std::endl;
     std::cout << "######src.norm_2():" << src.norm_2() << std::endl;
