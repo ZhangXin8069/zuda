@@ -833,7 +833,7 @@ __global__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, c
     int thread_size = blockDim.x;
     int grid_size = gridDim.x;
 
-    dest.assign_zero();
+    dest.assign_unit();
     const Complex i(0.0, 1.0);
     Complex tmp0[3];
     Complex tmp1[3];
@@ -1293,9 +1293,9 @@ int main()
     std::cout << "The maximum number of threads per EM:" << devProp.maxThreadsPerMultiProcessor << std::endl;
     std::cout << "Maximum number of warps per EM:" << devProp.maxThreadsPerMultiProcessor / 32 << std::endl;
 
-    int lat_x(32);
-    int lat_y(32);
-    int lat_z(32);
+    int lat_x(16);
+    int lat_y(16);
+    int lat_z(16);
     int lat_t(32);
     int lat_s(4);
     int lat_c(3);
@@ -1307,6 +1307,10 @@ int main()
     cudaMallocManaged((void **)&U, sizeof(LatticeGauge));
     cudaMallocManaged((void **)&src, sizeof(LatticeFermi));
     cudaMallocManaged((void **)&dest, sizeof(LatticeFermi));
+    cudaMallocManaged((void **)&U.lattice_vec, U.size * 2 * sizeof(double));
+    cudaMallocManaged((void **)&src.lattice_vec, src.size * 2 * sizeof(double));
+    cudaMallocManaged((void **)&dest.lattice_vec, dest.size * 2 * sizeof(double));
+
     U.assign_random();
     src.assign_random();
     dest.assign_zero();
@@ -1330,7 +1334,6 @@ int main()
     std::cout << "dest.norm_2():" << dest.norm_2() << std::endl;
     clock_t start = clock();
     dslash<<<gridSize, blockSize>>>(U, src, dest, inthread_num, inblock_num, ingrid_num, false);
-    ;
     cudaDeviceSynchronize();
     clock_t end = clock();
     std::cout << "src.norm_2():" << src.norm_2() << std::endl;
