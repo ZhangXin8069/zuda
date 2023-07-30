@@ -1282,37 +1282,37 @@ __host__ void lattice_block(const int &lat_x, const int &lat_y, const int &lat_z
     }
 }
 
-// // 矩阵类型，行优先，M(row, col) = *(M.elements + row * M.width + col)
-// struct Matrix
-// {
-//     int width;
-//     int height;
-//     float *elements;
-// };
-// // 获取矩阵A的(row, col)元素
-// __device__ float getElement(Matrix *A, int row, int col)
-// {
-//     return A->elements[row * A->width + col];
-// }
+// 矩阵类型，行优先，M(row, col) = *(M.elements + row * M.width + col)
+struct Matrix
+{
+    int width;
+    int height;
+    float *elements;
+};
+// 获取矩阵A的(row, col)元素
+__device__ float getElement(Matrix *A, int row, int col)
+{
+    return A->elements[row * A->width + col];
+}
 
-// // 为矩阵A的(row, col)元素赋值
-// __device__ void setElement(Matrix *A, int row, int col, float value)
-// {
-//     A->elements[row * A->width + col] = value;
-// }
+// 为矩阵A的(row, col)元素赋值
+__device__ void setElement(Matrix *A, int row, int col, float value)
+{
+    A->elements[row * A->width + col] = value;
+}
 
-// // 矩阵相乘kernel，2-D，每个线程计算一个元素
-// __global__ void matMulKernel(Matrix *A, Matrix *B, Matrix *C)
-// {
-//     float Cvalue = 0.0;
-//     int row = threadIdx.y + blockIdx.y * blockDim.y;
-//     int col = threadIdx.x + blockIdx.x * blockDim.x;
-//     for (int i = 0; i < A->width; ++i)
-//     {
-//         Cvalue += getElement(A, row, i) * getElement(B, i, col);
-//     }
-//     setElement(C, row, col, Cvalue);
-// }
+// 矩阵相乘kernel，2-D，每个线程计算一个元素
+__global__ void matMulKernel(Matrix *A, Matrix *B, Matrix *C)
+{
+    float Cvalue = 0.0;
+    int row = threadIdx.y + blockIdx.y * blockDim.y;
+    int col = threadIdx.x + blockIdx.x * blockDim.x;
+    for (int i = 0; i < A->width; ++i)
+    {
+        Cvalue += getElement(A, row, i) * getElement(B, i, col);
+    }
+    setElement(C, row, col, Cvalue);
+}
 
 int main()
 {
