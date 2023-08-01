@@ -1,4 +1,4 @@
-from lib import zuda_cpu
+from lib import test_zuda_cpu
 import os
 import sys
 
@@ -87,7 +87,7 @@ for x in range(Lx):
 MAX_ITER = 1e6
 TOL = 1e-6
 print("############ZUDA############")
-zuda_cpu.dslash_py(U_real,
+test_zuda_cpu.dslash_py(U_real,
                U_imag,
                p_real,
                p_imag,
