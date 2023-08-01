@@ -5,7 +5,7 @@
 #include <curand_kernel.h>
 #include <time.h>
 #include <random>
-#include <mpi.h>
+// #include <mpi.h>
 // #include "../include/zuda_cpu.h"
 // #include "../include/zuda_cuda.h"
 class Complex
@@ -339,14 +339,14 @@ public:
         }
         return result;
     }
-    __host__ double norm_2X()
-    {
-        double local_result = 0;
-        double global_result = 0;
-        local_result = norm_2();
-        MPI_Allreduce(&local_result, &global_result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        return global_result;
-    }
+    // __host__ double norm_2X()
+    // {
+    //     double local_result = 0;
+    //     double global_result = 0;
+    //     local_result = norm_2();
+    //     MPI_Allreduce(&local_result, &global_result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    //     return global_result;
+    // }
     __host__ __device__ Complex dot(const LatticeFermi &other)
     {
         Complex result;
@@ -356,15 +356,15 @@ public:
         }
         return result;
     }
-    __host__ Complex dotX(const LatticeFermi &other)
-    {
-        Complex local_result;
-        Complex global_result;
-        local_result = dot(other);
-        MPI_Allreduce(&local_result, &global_result, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    // __host__ Complex dotX(const LatticeFermi &other)
+    // {
+    //     Complex local_result;
+    //     Complex global_result;
+    //     local_result = dot(other);
+    //     MPI_Allreduce(&local_result, &global_result, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-        return global_result;
-    }
+    //     return global_result;
+    // }
 };
 class Gamme
 {
@@ -613,14 +613,14 @@ public:
         }
         return result;
     }
-    __host__ double norm_2X()
-    {
-        double local_result = 0;
-        double global_result = 0;
-        local_result = norm_2();
-        MPI_Allreduce(&local_result, &global_result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        return global_result;
-    }
+    // __host__ double norm_2X()
+    // {
+    //     double local_result = 0;
+    //     double global_result = 0;
+    //     local_result = norm_2();
+    //     MPI_Allreduce(&local_result, &global_result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    //     return global_result;
+    // }
     __host__ __device__ Complex dot(const LatticeGauge &other)
     {
         Complex result;
@@ -630,15 +630,15 @@ public:
         }
         return result;
     }
-    __host__ Complex dotX(const LatticeGauge &other)
-    {
-        Complex local_result;
-        Complex global_result;
-        local_result = dot(other);
-        MPI_Allreduce(&local_result, &global_result, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    // __host__ Complex dotX(const LatticeGauge &other)
+    // {
+    //     Complex local_result;
+    //     Complex global_result;
+    //     local_result = dot(other);
+    //     MPI_Allreduce(&local_result, &global_result, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-        return global_result;
-    }
+    //     return global_result;
+    // }
 };
 __global__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest)
 {
