@@ -1,248 +1,480 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-
-#define L 4
-#define N (L * L * L * L)
-#define MAX_ITER 1000
-#define TOL 1e-12
-
-// Define lattice site indices
-#define ix(i, j, k, t) ((t)*L * L * L + (k)*L * L + (j)*L + (i))
-
-// Define lattice structure
-class Lattice
+#include <iostream>
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <time.h>
+#include <random>
+__device__ const int lat_x = 32;
+__device__ const int lat_y = 32;
+__device__ const int lat_z = 32;
+__device__ const int lat_t = 64;
+__device__ const int lat_s = 4;
+__device__ const int lat_c = 3;
+__device__ const int lat_c0 = 3;
+__device__ const int lat_c1 = 3;
+__device__ const int size_guage = lat_x * lat_y * lat_z * lat_t * lat_s * lat_c0 * lat_c1;
+__device__ const int size_fermi = lat_x * lat_y * lat_z * lat_t * lat_s * lat_c;
+__device__ const int tmp_c = lat_c;
+__device__ const int tmp_sc = lat_s * tmp_c;
+__device__ const int tmp_tsc = lat_t * tmp_sc;
+__device__ const int tmp_ztsc = lat_z * tmp_tsc;
+__device__ const int tmp_yztsc = lat_y * tmp_ztsc;
+__device__ const int tmp_cc = lat_c0 * lat_c1;
+__device__ const int tmp_scc = lat_s * tmp_cc;
+__device__ const int tmp_tscc = lat_t * tmp_scc;
+__device__ const int tmp_ztscc = lat_z * tmp_tscc;
+__device__ const int tmp_yztscc = lat_y * tmp_ztscc;
+struct LatticeComplex
 {
-public:
-    double *fermion_field;
-    double *gauge_field;
-
-    // Constructor
-    Lattice()
+    double real;
+    double imag;
+    // double data[2];
+    // double &real = real;
+    // double &imag = imag;
+    __device__ __forceinline__ LatticeComplex(const double &real = 0.0, const double &imag = 0.0) : real(real), imag(imag) {}
+    __device__ __forceinline__ LatticeComplex &operator=(const LatticeComplex &other)
     {
-        cudaMallocManaged(&fermion_field, N * sizeof(double));
-        cudaMallocManaged(&gauge_field, 4 * N * sizeof(double));
-        for (int i = 0; i < N; i++)
-        {
-            fermion_field[i] = 0.0;
-            for (int mu = 0; mu < 4; mu++)
-            {
-                gauge_field[4 * i + mu] = 1.0;
-            }
-        }
+        real = other.real;
+        imag = other.imag;
+        return *this;
     }
-
-    // Destructor
-    ~Lattice()
+    __device__ __forceinline__ LatticeComplex operator+(const LatticeComplex &other) const
     {
-        cudaFree(fermion_field);
-        cudaFree(gauge_field);
+        return LatticeComplex(real + other.real, imag + other.imag);
+    }
+    __device__ __forceinline__ LatticeComplex operator-(const LatticeComplex &other) const
+    {
+        return LatticeComplex(real - other.real, imag - other.imag);
+    }
+    __device__ __forceinline__ LatticeComplex operator*(const LatticeComplex &other) const
+    {
+        return LatticeComplex(real * other.real - imag * other.imag,
+                              real * other.imag + imag * other.real);
+    }
+    __device__ __forceinline__ LatticeComplex operator*(const double &other) const
+    {
+        return LatticeComplex(real * other, imag * other);
+    }
+    __device__ __forceinline__ LatticeComplex operator/(const LatticeComplex &other) const
+    {
+        double denom = other.real * other.real + other.imag * other.imag;
+        return LatticeComplex((real * other.real + imag * other.imag) / denom,
+                              (imag * other.real - real * other.imag) / denom);
+    }
+    __device__ __forceinline__ LatticeComplex operator/(const double &other) const
+    {
+        return LatticeComplex(real / other, imag / other);
+    }
+    __device__ __forceinline__ LatticeComplex operator-() const
+    {
+        return LatticeComplex(-real, -imag);
+    }
+    __device__ bool operator==(const LatticeComplex &other) const
+    {
+        return (real == other.real && imag == other.imag);
+    }
+    __device__ bool operator!=(const LatticeComplex &other) const
+    {
+        return !(*this == other);
+    }
+    __device__ __forceinline__ LatticeComplex &operator+=(const LatticeComplex &other)
+    {
+        real = real + other.real;
+        imag = imag + other.imag;
+        return *this;
+    }
+    __device__ __forceinline__ LatticeComplex &operator-=(const LatticeComplex &other)
+    {
+        real = real - other.real;
+        imag = imag - other.imag;
+        return *this;
+    }
+    __device__ __forceinline__ LatticeComplex &operator*=(const LatticeComplex &other)
+    {
+        real = real * other.real - imag * other.imag;
+        imag = real * other.imag + imag * other.real;
+        return *this;
+    }
+    __device__ __forceinline__ LatticeComplex &operator*=(const double &other)
+    {
+        real = real * other;
+        imag = imag * other;
+        return *this;
+    }
+    __device__ __forceinline__ LatticeComplex &operator/=(const LatticeComplex &other)
+    {
+        double denom = other.real * other.real + other.imag * other.imag;
+        real = (real * other.real + imag * other.imag) / denom;
+        imag = (imag * other.real - real * other.imag) / denom;
+        return *this;
+    }
+    __device__ __forceinline__ LatticeComplex &operator/=(const double &other)
+    {
+        real = real / other;
+        imag = imag / other;
+        return *this;
+    }
+    __device__ __forceinline__ LatticeComplex conj() const
+    {
+        return LatticeComplex(real, -imag);
     }
 };
 
-// Compute Wilson fermion operator on GPU
-__device__ double wilson_fermion_op(Lattice *lat, int i, int j)
+__device__ __forceinline__ int index_guage(const int &index_x, const int &index_y, const int &index_z, const int &index_t, const int &index_s, const int &index_c0, const int &index_c1)
 {
-    int t0 = i / (L * L * L);
-    int x0 = (i / L) % L;
-    int y0 = (i % L) % L;
-    int z0 = i % L;
-    int t1 = j / (L * L * L);
-    int x1 = (j / L) % L;
-    int y1 = (j % L) % L;
-    int z1 = j % L;
-    double gamma[5][4] = {
-        {0.0, 0.0, 0.0, 1.0},
-        {0.0, 0.0, 1.0, 0.0},
-        {0.0, 0.0, 0.0, -1.0},
-        {0.0, -1.0, 0.0, 0.0},
-        {1.0, 0.0, 0.0, 0.0}};
-    double wf = 0.0;
-    for (int mu = 0; mu < 4; mu++)
-    {
-        int i_mu = 4 * i + mu;
-        int j_mu = 4 * j + mu;
-        if (i_mu == j_mu)
-        {
-            continue;
-        }
-        int i_mu_p = 4 * ((i + (1 << mu)) % N) + mu;
-        int i_mu_m = 4 * ((i - (1 << mu) + N) % N) + mu;
-        double U_mu_p = lat->gauge_field[i_mu];
-        double U_mu_m = lat->gauge_field[i_mu_m];
-        double U_mu_p_inv = lat->gauge_field[i_mu_p];
-        U_mu_p_inv = 1.0 / U_mu_p_inv;
-        double phi = gamma[0][mu];
-        phi *= U_mu_m * lat->fermion_field[j];
-        phi -= U_mu_p_inv * lat->fermion_field[j_mu];
-        wf += phi;
-    }
-    wf += 2.0 * lat->fermion_field[j];
-    return wf;
+    return index_x * tmp_yztscc + index_y * tmp_ztscc + index_z * tmp_tscc + index_t * tmp_scc + index_s * tmp_cc + index_c0 * tmp_c + index_c1;
+}
+__device__ __forceinline__ int index_fermi(const int &index_x, const int &index_y, const int &index_z, const int &index_t, const int &index_s, const int &index_c)
+{
+    return index_x * tmp_yztsc + index_y * tmp_ztsc + index_z * tmp_tsc + index_t * tmp_sc + index_s * tmp_c + index_c;
 }
 
-// Compute gauge field gradient on GPU
-__global__ void gauge_field_grad_kernel(Lattice *lat, double *grad)
+class Gamme
 {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= 4 * N)
+    /*
+    Gamme0=
+    [[0,0,0,i],
+    [0,0,i,0],
+    [0,-i,0,0],
+    [-i,0,0,0]]
+    Gamme1=
+    [[0,0,0,-1],
+    [0,0,1,0],
+    [0,1,0,0],
+    [-1,0,0,0]]
+    Gamme2=
+    [[0,0,i,0],
+    [0,0,0,-i],
+    [-i,0,0,0],
+    [0,i,0,0]]
+    Gamme3=
+    [[0,0,1,0],
+    [0,0,0,1],
+    [1,0,0,0],
+    [0,1,0,0]]
+    */
+};
+__global__ void dslash(const LatticeComplex *U, const LatticeComplex *src, LatticeComplex *dest)
+{
+    int x = blockIdx.x;
+    int y = blockIdx.y;
+    int z = blockIdx.z;
+    int t = threadIdx.x;
+    const LatticeComplex i(0.0, 1.0);
+    const LatticeComplex zero(0.0, 0.0);
+    int tmp;
+    LatticeComplex tmp0(0.0, 0.0);
+    LatticeComplex tmp1(0.0, 0.0);
+    LatticeComplex local_dest[12];
+    for (int c0 = 0; c0 < lat_c0; c0++)
     {
-        return;
+        local_dest[c0 * lat_s + 0] = dest[index_fermi(x, y, z, t, 0, c0)];
+        local_dest[c0 * lat_s + 1] = dest[index_fermi(x, y, z, t, 1, c0)];
+        local_dest[c0 * lat_s + 2] = dest[index_fermi(x, y, z, t, 2, c0)];
+        local_dest[c0 * lat_s + 3] = dest[index_fermi(x, y, z, t, 3, c0)];
     }
-    grad[i] = 0.0;
-    int t = i / (4 * L * L * L);
-    int x = (i / (4 * L * L)) % L;
-    int y = (i / (4 * L)) % L;
-    int z = (i / 4) % L;
-    int mu = i % 4;
-    for (int i0 = 0; i0 < L; i0++)
+
+    // mass term and others
+    // for (int s = 0; s < lat_s; s++)
+    // {
+    //     for (int c = 0; c < lat_c0; c++)
+    //     {
+    //         dest(x, y, z, t, s, c) += src(x, y, z, t, s, c) * 0;
+    //     }
+    // }
+    // backward x
+    if (x == 0)
     {
-        for (int i1 = 0; i1 < L; i1++)
+        tmp = lat_x - 1;
+    }
+    else
+    {
+        tmp = x - 1;
+    }
+    for (int c0 = 0; c0 < lat_c0; c0++)
+    {
+        tmp0 = zero;
+        tmp1 = zero;
+        for (int c1 = 0; c1 < lat_c1; c1++)
         {
-            for (int i2 = 0; i2 < L; i2++)
-            {
-                int j = ix(i0, i1, i2, t);
-                int j_mu = 4 * j + mu;
-                int j_mu_p = 4 * ((ix(i0, i1, i2, (t + 1) % L) * 4 + mu) % (4 * N)) + mu;
-                int j_mu_m = 4 * ((ix(i0, i1, i2, (t - 1 + L) % L) * 4 + mu) % (4 * N)) + mu;
-                int i_mu = 4 * i + mu;
-                double U_mu = lat->gauge_field[i_mu];
-                double U_mu_p = lat->gauge_field[j_mu_p];
-                double U_mu_m = lat->gauge_field[j_mu_m];
-                double U_mu_p_inv = 1.0 / U_mu_p;
-                double U_mu_m_inv = 1.0 / U_mu_m;
-                double phi = 0.0;
-                phi += U_mu * wilson_fermion_op(lat, i, j_mu);
-                phi -= U_mu_p_inv * wilson_fermion_op(lat, i, j_mu_p);
-                phi -= U_mu_m_inv * wilson_fermion_op(lat, i, j_mu_m);
-                grad[i_mu] += phi;
-            }
+            tmp0 += (src[index_fermi(tmp, y, z, t, 0, c1)] + src[index_fermi(tmp, y, z, t, 3, c1)] * i) * U[index_guage(tmp, y, z, t, 0, c1, c0)].conj();
+            tmp1 += (src[index_fermi(tmp, y, z, t, 1, c1)] + src[index_fermi(tmp, y, z, t, 2, c1)] * i) * U[index_guage(tmp, y, z, t, 0, c1, c0)].conj();
         }
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] -= tmp1 * i;
+        local_dest[c0 * lat_s + 3] -= tmp0 * i;
+    }
+    // forward x
+    if (x == lat_x - 1)
+    {
+        tmp = 0;
+    }
+    else
+    {
+        tmp = x + 1;
+    }
+    for (int c0 = 0; c0 < lat_c0; c0++)
+    {
+        tmp0 = zero;
+        tmp1 = zero;
+        for (int c1 = 0; c1 < lat_c1; c1++)
+        {
+            tmp0 += (src[index_fermi(tmp, y, z, t, 0, c1)] - src[index_fermi(tmp, y, z, t, 3, c1)] * i) * U[index_guage(x, y, z, t, 0, c0, c1)];
+            tmp1 += (src[index_fermi(tmp, y, z, t, 1, c1)] - src[index_fermi(tmp, y, z, t, 2, c1)] * i) * U[index_guage(x, y, z, t, 0, c0, c1)];
+        }
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] += tmp1 * i;
+        local_dest[c0 * lat_s + 3] += tmp0 * i;
+    }
+    // backward y
+    if (y == 0)
+    {
+        tmp = lat_y - 1;
+    }
+    else
+    {
+        tmp = y - 1;
+    }
+    for (int c0 = 0; c0 < lat_c0; c0++)
+    {
+        tmp0 = zero;
+        tmp1 = zero;
+        for (int c1 = 0; c1 < lat_c1; c1++)
+        {
+            tmp0 += (src[index_fermi(x, tmp, z, t, 0, c1)] - src[index_fermi(x, tmp, z, t, 3, c1)]) * U[index_guage(x, tmp, z, t, 1, c1, c0)].conj();
+            tmp1 += (src[index_fermi(x, tmp, z, t, 1, c1)] + src[index_fermi(x, tmp, z, t, 2, c1)]) * U[index_guage(x, tmp, z, t, 1, c1, c0)].conj();
+        }
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] += tmp1;
+        local_dest[c0 * lat_s + 3] -= tmp0;
+    }
+    // forward y
+    if (y == lat_y - 1)
+    {
+        tmp = 0;
+    }
+    else
+    {
+        tmp = y + 1;
+    }
+    for (int c0 = 0; c0 < lat_c0; c0++)
+    {
+        tmp0 = zero;
+        tmp1 = zero;
+        for (int c1 = 0; c1 < lat_c1; c1++)
+        {
+            tmp0 += (src[index_fermi(x, tmp, z, t, 0, c1)] + src[index_fermi(x, tmp, z, t, 3, c1)]) * U[index_guage(x, y, z, t, 1, c0, c1)];
+            tmp1 += (src[index_fermi(x, tmp, z, t, 1, c1)] - src[index_fermi(x, tmp, z, t, 2, c1)]) * U[index_guage(x, y, z, t, 1, c0, c1)];
+        }
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] -= tmp1;
+        local_dest[c0 * lat_s + 3] += tmp0;
+    }
+    // backward z
+    if (z == 0)
+    {
+        tmp = lat_z - 1;
+    }
+    else
+    {
+        tmp = z - 1;
+    }
+    for (int c0 = 0; c0 < lat_c0; c0++)
+    {
+        tmp0 = zero;
+        tmp1 = zero;
+        for (int c1 = 0; c1 < lat_c1; c1++)
+        {
+            tmp0 += (src[index_fermi(x, y, tmp, t, 0, c1)] + src[index_fermi(x, y, tmp, t, 2, c1)] * i) * U[index_guage(x, y, tmp, t, 2, c1, c0)].conj();
+            tmp1 += (src[index_fermi(x, y, tmp, t, 1, c1)] - src[index_fermi(x, y, tmp, t, 3, c1)] * i) * U[index_guage(x, y, tmp, t, 2, c1, c0)].conj();
+        }
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] -= tmp0 * i;
+        local_dest[c0 * lat_s + 3] += tmp1 * i;
+    }
+    // forward z
+    if (z == lat_z - 1)
+    {
+        tmp = 0;
+    }
+    else
+    {
+        tmp = z + 1;
+    }
+    for (int c0 = 0; c0 < lat_c0; c0++)
+    {
+        tmp0 = zero;
+        tmp1 = zero;
+        for (int c1 = 0; c1 < lat_c1; c1++)
+        {
+            tmp0 += (src[index_fermi(x, y, tmp, t, 0, c1)] - src[index_fermi(x, y, tmp, t, 2, c1)] * i) * U[index_guage(x, y, z, t, 2, c0, c1)];
+            tmp1 += (src[index_fermi(x, y, tmp, t, 1, c1)] + src[index_fermi(x, y, tmp, t, 3, c1)] * i) * U[index_guage(x, y, z, t, 2, c0, c1)];
+        }
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] += tmp0 * i;
+        local_dest[c0 * lat_s + 3] -= tmp1 * i;
+    }
+    // backward t
+    if (t == 0)
+    {
+        tmp = lat_t - 1;
+    }
+    else
+    {
+        tmp = t - 1;
+    }
+    for (int c0 = 0; c0 < lat_c0; c0++)
+    {
+        tmp0 = zero;
+        tmp1 = zero;
+        for (int c1 = 0; c1 < lat_c1; c1++)
+        {
+            tmp0 += (src[index_fermi(x, y, z, tmp, 0, c1)] + src[index_fermi(x, y, z, tmp, 2, c1)]) * U[index_guage(x, y, z, tmp, 3, c1, c0)].conj();
+            tmp1 += (src[index_fermi(x, y, z, tmp, 1, c1)] + src[index_fermi(x, y, z, tmp, 3, c1)]) * U[index_guage(x, y, z, tmp, 3, c1, c0)].conj();
+        }
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] += tmp0;
+        local_dest[c0 * lat_s + 3] += tmp1;
+    }
+    // forward t
+    if (t == lat_t - 1)
+    {
+        tmp = 0;
+    }
+    else
+    {
+        tmp = t + 1;
+    }
+    for (int c0 = 0; c0 < lat_c0; c0++)
+    {
+        tmp0 = zero;
+        tmp1 = zero;
+        for (int c1 = 0; c1 < lat_c1; c1++)
+        {
+            tmp0 += (src[index_fermi(x, y, z, tmp, 0, c1)] - src[index_fermi(x, y, z, tmp, 2, c1)]) * U[index_guage(x, y, z, t, 3, c0, c1)];
+            tmp1 += (src[index_fermi(x, y, z, tmp, 1, c1)] - src[index_fermi(x, y, z, tmp, 3, c1)]) * U[index_guage(x, y, z, t, 3, c0, c1)];
+        }
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] -= tmp0;
+        local_dest[c0 * lat_s + 3] -= tmp1;
+    }
+
+    for (int c0 = 0; c0 < lat_c0; c0++)
+    {
+        dest[index_fermi(x, y, z, t, 0, c0)] = local_dest[c0 * lat_s + 0];
+        dest[index_fermi(x, y, z, t, 1, c0)] = local_dest[c0 * lat_s + 1];
+        dest[index_fermi(x, y, z, t, 2, c0)] = local_dest[c0 * lat_s + 2];
+        dest[index_fermi(x, y, z, t, 3, c0)] = local_dest[c0 * lat_s + 3];
     }
 }
 
-// Compute gauge field gradient on CPU
-void gauge_field_grad(Lattice *lat, double *grad)
+// __host__ double norm_2(const LatticeComplex *a, const int &size)
+// {
+//     double result = 0;
+//     for (int i = 0; i < size; i++)
+//     {
+//         result += a[i].real * a[i].real + a[i].imag * a[i].imag;
+//     }
+//     return result;
+// }
+// __host__ LatticeComplex dot(const LatticeComplex *a, const LatticeComplex *b, const int &size)
+// {
+//     LatticeComplex result(0.0, 0.0);
+//     for (int i = 0; i < size; i++)
+//     {
+//         result += a[i].conj() * b[i];
+//     }
+//     return result;
+// }
+
+__host__ void assign_zero(LatticeComplex *a, const int &size)
 {
-    int block_size = 256;
-    int num_blocks = (4 * N + block_size - 1) / block_size;
-    gauge_field_grad_kernel<<<num_blocks, block_size>>>(lat, grad);
-    cudaDeviceSynchronize();
+    for (int i = 0; i < size; i++)
+    {
+        a[i].real = 0;
+        a[i].imag = 0;
+    }
 }
 
-// Initialize lattice
-void init_lattice(Lattice *lat)
+__host__ void assign_unit(LatticeComplex *a, const int &size)
 {
-    lat->fermion_field = NULL;
-    lat->gauge_field = NULL;
-    cudaMallocManaged(&lat->fermion_field, N * sizeof(double));
-    cudaMallocManaged(&lat->gauge_field, 4 * N * sizeof(double));
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < size; i++)
     {
-        lat->fermion_field[i] = 0.0;
-        for (int mu = 0; mu < 4; mu++)
-        {
-            lat->gauge_field[4 * i + mu] = 1.0;
-        }
+        a[i].real = 1;
+        a[i].imag = 0;
     }
 }
 
-// Free lattice memory
-void free_lattice(Lattice *lat)
+__host__ void assign_random(LatticeComplex *a, const int &size, const unsigned &seed)
 {
-    cudaFree(lat->fermion_field);
-    cudaFree(lat->gauge_field);
+    std::default_random_engine e(seed);
+    std::uniform_real_distribution<double> u(0.0, 1.0);
+    for (int i = 0; i < size; i++)
+    {
+        a[i].real = u(e);
+        a[i].imag = u(e);
+    }
 }
 
-// Compute LQCD stable conjugate gradient on GPU
-void lqcd_cg(Lattice *lat, double *b, double *x)
-{
-    double *r = NULL;
-    double *p = NULL;
-    double *Ap = NULL;
-    cudaMallocManaged(&r, N * sizeof(double));
-    cudaMallocManaged(&p, N * sizeof(double));
-    cudaMallocManaged(&Ap, N * sizeof(double));
-    for (int i = 0; i < N; i++)
-    {
-        r[i] = b[i];
-        p[i] = b[i];
-    }
-    double r_norm_sq = 0.0;
-    double r_norm_sq_old = 0.0;
-    double alpha = 0.0;
-    double beta = 0.0;
-    gauge_field_grad(lat, Ap);
-    for (int i = 0; i < N; i++)
-    {
-        Ap[i] -= b[i];
-        p[i] = r[i] - Ap[i];
-        r_norm_sq += r[i] * r[i];
-    }
-    int iter = 0;
-    while (iter < MAX_ITER)
-    {
-        gauge_field_grad(lat, Ap);
-        double Ap_dot_p = 0.0;
-        for (int i = 0; i < N; i++)
-        {
-            Ap_dot_p += Ap[i] * p[i];
-        }
-        alpha = r_norm_sq / Ap_dot_p;
-        for (int i = 0; i < N; i++)
-        {
-            x[i] += alpha * p[i];
-            r[i] -= alpha * Ap[i];
-        }
-        r_norm_sq_old = r_norm_sq;
-        r_norm_sq = 0.0;
-        for (int i = 0; i < N; i++)
-        {
-            r_norm_sq += r[i] * r[i];
-        }
-        if (sqrt(r_norm_sq) < TOL)
-        {
-            break;
-        }
-        beta = r_norm_sq / r_norm_sq_old;
-        for (int i = 0; i < N; i++)
-        {
-            p[i] = r[i] + beta * p[i];
-        }
-        iter++;
-    }
-    cudaFree(r);
-    cudaFree(p);
-    cudaFree(Ap);
-}
+// __global__ void assign_random(LatticeComplex *a, int size, unsigned seed)
+// {
+
+//     curandState state;
+//     curandevice_init(seed, index, 0, &state);
+//     a[index].real = curand_uniform(&state);
+//     a[index].imag = curand_uniform(&state);
+// }
 
 int main()
 {
-    Lattice *lat = new Lattice();
-    double *b = NULL;
-    double *x = NULL;
-    cudaMallocManaged(&b, N * sizeof(double));
-    cudaMallocManaged(&x, N * sizeof(double));
-    // Initialize source vector and solution vector
-    for (int i = 0; i < N; i++)
-    {
-        b[i] = 1.0;
-        x[i] = 0.0;
-    }
-    // Compute LQCD stable conjugate gradient
-    lqcd_cg(lat, b, x);
 
-    // Print solution vector
-    for (int i = 0; i < N; i++)
-    {
-        printf("%f ", x[i]);
-    }
-    printf("\n");
-
-    // Free memory
-    cudaFree(b);
-    cudaFree(x);
-    delete lat;
-
+    LatticeComplex *U, *src, *dest;
+    U = (LatticeComplex *)malloc(size_guage * sizeof(LatticeComplex));
+    src = (LatticeComplex *)malloc(size_fermi * sizeof(LatticeComplex));
+    dest = (LatticeComplex *)malloc(size_fermi * sizeof(LatticeComplex));
+    assign_random(U, size_guage, 66);
+    assign_random(src, size_guage, 77);
+    assign_zero(dest, size_guage);
+    std::cout << "sizeof(LatticeComplex)" << sizeof(LatticeComplex) << std::endl;
+    std::cout << "sizeof(double)" << sizeof(double) << std::endl;
+    LatticeComplex *device_U, *device_src, *device_dest;
+    cudaMalloc((void **)&device_U, size_guage * sizeof(LatticeComplex));
+    cudaMalloc((void **)&device_src, size_fermi * sizeof(LatticeComplex));
+    cudaMalloc((void **)&device_dest, size_fermi * sizeof(LatticeComplex));
+    cudaMemcpy((void *)device_U, (void *)U, size_guage * sizeof(LatticeComplex), cudaMemcpyHostToDevice);
+    cudaMemcpy((void *)device_src, (void *)src, size_fermi * sizeof(LatticeComplex), cudaMemcpyHostToDevice);
+    cudaMemcpy((void *)device_dest, (void *)dest, size_fermi * sizeof(LatticeComplex), cudaMemcpyHostToDevice);
+    dim3 gridSize(lat_x, lat_y, lat_z);
+    dim3 blockSize(lat_t);
+    clock_t start = clock();
+    dslash<<<gridSize, blockSize>>>(device_U, device_src, device_dest);
+    cudaDeviceSynchronize();
+    clock_t end0 = clock();
+    cudaMemcpy((void *)U, (void *)device_U, size_guage * sizeof(LatticeComplex), cudaMemcpyDeviceToHost);
+    cudaMemcpy((void *)src, (void *)device_src, size_fermi * sizeof(LatticeComplex), cudaMemcpyDeviceToHost);
+    cudaMemcpy((void *)dest, (void *)device_dest, size_fermi * sizeof(LatticeComplex), cudaMemcpyDeviceToHost);
+    clock_t end1 = clock();
+    std::cout
+        << "################"
+        << "time cost without cudaMemcpy:"
+        << (double)(end0 - start) / CLOCKS_PER_SEC
+        << "s"
+        << std::endl;
+    std::cout
+        << "################"
+        << "time cost with cudaMemcpy:"
+        << (double)(end1 - start) / CLOCKS_PER_SEC
+        << "s"
+        << std::endl;
+    cudaFree(device_U);
+    cudaFree(device_src);
+    cudaFree(device_dest);
     return 0;
 }

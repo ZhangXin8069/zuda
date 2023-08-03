@@ -3,17 +3,26 @@
 #include <cuda_runtime.h>
 #include <time.h>
 #include <random>
-const int lat_x = 32;
-const int lat_y = 32;
-const int lat_z = 32;
-const int lat_t = 32;
-const int lat_s = 4;
-const int lat_c = 3;
-const int lat_c0 = 3;
-const int lat_c1 = 3;
-const int size_fermi = lat_x * lat_y * lat_z * lat_t * lat_s * lat_c;
-const int size_guage = lat_x * lat_y * lat_z * lat_t * lat_s * lat_c0 * lat_c1;
-
+__device__ const int lat_x = 32;
+__device__ const int lat_y = 32;
+__device__ const int lat_z = 32;
+__device__ const int lat_t = 64;
+__device__ const int lat_s = 4;
+__device__ const int lat_c = 3;
+__device__ const int lat_c0 = 3;
+__device__ const int lat_c1 = 3;
+__device__ const int size_guage = lat_x * lat_y * lat_z * lat_t * lat_s * lat_c0 * lat_c1;
+__device__ const int size_fermi = lat_x * lat_y * lat_z * lat_t * lat_s * lat_c;
+__device__ const int tmp_c = lat_c;
+__device__ const int tmp_sc = lat_s * tmp_c;
+__device__ const int tmp_tsc = lat_t * tmp_sc;
+__device__ const int tmp_ztsc = lat_z * tmp_tsc;
+__device__ const int tmp_yztsc = lat_y * tmp_ztsc;
+__device__ const int tmp_cc = lat_c0 * lat_c1;
+__device__ const int tmp_scc = lat_s * tmp_cc;
+__device__ const int tmp_tscc = lat_t * tmp_scc;
+__device__ const int tmp_ztscc = lat_z * tmp_tscc;
+__device__ const int tmp_yztscc = lat_y * tmp_ztscc;
 struct LatticeComplex
 {
     double real;
@@ -21,7 +30,7 @@ struct LatticeComplex
     // double data[2];
     // double &real = real;
     // double &imag = imag;
-    __device__ __forceinline__ LatticeComplex(double real, double imag) : real(real), imag(imag) {}
+    __device__ __forceinline__ LatticeComplex(const double &real = 0.0, const double &imag = 0.0) : real(real), imag(imag) {}
     __device__ __forceinline__ LatticeComplex &operator=(const LatticeComplex &other)
     {
         real = other.real;
@@ -112,37 +121,11 @@ struct LatticeComplex
 
 __device__ __forceinline__ int index_guage(const int &index_x, const int &index_y, const int &index_z, const int &index_t, const int &index_s, const int &index_c0, const int &index_c1)
 {
-    int tmp(1), result(0);
-    result += index_c1;
-    tmp *= lat_c1;
-    result += index_c0 * tmp;
-    tmp *= lat_c0;
-    result += index_s * tmp;
-    tmp *= lat_s;
-    result += index_t * tmp;
-    tmp *= lat_t;
-    result += index_z * tmp;
-    tmp *= lat_z;
-    result += index_y * tmp;
-    tmp *= lat_y;
-    result += index_x * tmp;
-    return result;
+    return index_x * tmp_yztscc + index_y * tmp_ztscc + index_z * tmp_tscc + index_t * tmp_scc + index_s * tmp_cc + index_c0 * tmp_c + index_c1;
 }
 __device__ __forceinline__ int index_fermi(const int &index_x, const int &index_y, const int &index_z, const int &index_t, const int &index_s, const int &index_c)
 {
-    int tmp(1), result(0);
-    result += index_c;
-    tmp *= lat_c;
-    result += index_s * tmp;
-    tmp *= lat_s;
-    result += index_t * tmp;
-    tmp *= lat_t;
-    result += index_z * tmp;
-    tmp *= lat_z;
-    result += index_y * tmp;
-    tmp *= lat_y;
-    result += index_x * tmp;
-    return result;
+    return index_x * tmp_yztsc + index_y * tmp_ztsc + index_z * tmp_tsc + index_t * tmp_sc + index_s * tmp_c + index_c;
 }
 
 class Gamme
@@ -181,6 +164,15 @@ __global__ void dslash(const LatticeComplex *U, const LatticeComplex *src, Latti
     int tmp;
     LatticeComplex tmp0(0.0, 0.0);
     LatticeComplex tmp1(0.0, 0.0);
+    LatticeComplex local_dest[12];
+    for (int c0 = 0; c0 < lat_c0; c0++)
+    {
+        local_dest[c0 * lat_s + 0] = dest[index_fermi(x, y, z, t, 0, c0)];
+        local_dest[c0 * lat_s + 1] = dest[index_fermi(x, y, z, t, 1, c0)];
+        local_dest[c0 * lat_s + 2] = dest[index_fermi(x, y, z, t, 2, c0)];
+        local_dest[c0 * lat_s + 3] = dest[index_fermi(x, y, z, t, 3, c0)];
+    }
+
     // mass term and others
     // for (int s = 0; s < lat_s; s++)
     // {
@@ -207,10 +199,10 @@ __global__ void dslash(const LatticeComplex *U, const LatticeComplex *src, Latti
             tmp0 += (src[index_fermi(tmp, y, z, t, 0, c1)] + src[index_fermi(tmp, y, z, t, 3, c1)] * i) * U[index_guage(tmp, y, z, t, 0, c1, c0)].conj();
             tmp1 += (src[index_fermi(tmp, y, z, t, 1, c1)] + src[index_fermi(tmp, y, z, t, 2, c1)] * i) * U[index_guage(tmp, y, z, t, 0, c1, c0)].conj();
         }
-        dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
-        dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
-        dest[index_fermi(x, y, z, t, 2, c0)] -= tmp1 * i;
-        dest[index_fermi(x, y, z, t, 3, c0)] -= tmp0 * i;
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] -= tmp1 * i;
+        local_dest[c0 * lat_s + 3] -= tmp0 * i;
     }
     // forward x
     if (x == lat_x - 1)
@@ -230,10 +222,10 @@ __global__ void dslash(const LatticeComplex *U, const LatticeComplex *src, Latti
             tmp0 += (src[index_fermi(tmp, y, z, t, 0, c1)] - src[index_fermi(tmp, y, z, t, 3, c1)] * i) * U[index_guage(x, y, z, t, 0, c0, c1)];
             tmp1 += (src[index_fermi(tmp, y, z, t, 1, c1)] - src[index_fermi(tmp, y, z, t, 2, c1)] * i) * U[index_guage(x, y, z, t, 0, c0, c1)];
         }
-        dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
-        dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
-        dest[index_fermi(x, y, z, t, 2, c0)] += tmp1 * i;
-        dest[index_fermi(x, y, z, t, 3, c0)] += tmp0 * i;
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] += tmp1 * i;
+        local_dest[c0 * lat_s + 3] += tmp0 * i;
     }
     // backward y
     if (y == 0)
@@ -253,10 +245,10 @@ __global__ void dslash(const LatticeComplex *U, const LatticeComplex *src, Latti
             tmp0 += (src[index_fermi(x, tmp, z, t, 0, c1)] - src[index_fermi(x, tmp, z, t, 3, c1)]) * U[index_guage(x, tmp, z, t, 1, c1, c0)].conj();
             tmp1 += (src[index_fermi(x, tmp, z, t, 1, c1)] + src[index_fermi(x, tmp, z, t, 2, c1)]) * U[index_guage(x, tmp, z, t, 1, c1, c0)].conj();
         }
-        dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
-        dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
-        dest[index_fermi(x, y, z, t, 2, c0)] += tmp1;
-        dest[index_fermi(x, y, z, t, 3, c0)] -= tmp0;
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] += tmp1;
+        local_dest[c0 * lat_s + 3] -= tmp0;
     }
     // forward y
     if (y == lat_y - 1)
@@ -276,10 +268,10 @@ __global__ void dslash(const LatticeComplex *U, const LatticeComplex *src, Latti
             tmp0 += (src[index_fermi(x, tmp, z, t, 0, c1)] + src[index_fermi(x, tmp, z, t, 3, c1)]) * U[index_guage(x, y, z, t, 1, c0, c1)];
             tmp1 += (src[index_fermi(x, tmp, z, t, 1, c1)] - src[index_fermi(x, tmp, z, t, 2, c1)]) * U[index_guage(x, y, z, t, 1, c0, c1)];
         }
-        dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
-        dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
-        dest[index_fermi(x, y, z, t, 2, c0)] -= tmp1;
-        dest[index_fermi(x, y, z, t, 3, c0)] += tmp0;
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] -= tmp1;
+        local_dest[c0 * lat_s + 3] += tmp0;
     }
     // backward z
     if (z == 0)
@@ -299,10 +291,10 @@ __global__ void dslash(const LatticeComplex *U, const LatticeComplex *src, Latti
             tmp0 += (src[index_fermi(x, y, tmp, t, 0, c1)] + src[index_fermi(x, y, tmp, t, 2, c1)] * i) * U[index_guage(x, y, tmp, t, 2, c1, c0)].conj();
             tmp1 += (src[index_fermi(x, y, tmp, t, 1, c1)] - src[index_fermi(x, y, tmp, t, 3, c1)] * i) * U[index_guage(x, y, tmp, t, 2, c1, c0)].conj();
         }
-        dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
-        dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
-        dest[index_fermi(x, y, z, t, 2, c0)] -= tmp0 * i;
-        dest[index_fermi(x, y, z, t, 3, c0)] += tmp1 * i;
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] -= tmp0 * i;
+        local_dest[c0 * lat_s + 3] += tmp1 * i;
     }
     // forward z
     if (z == lat_z - 1)
@@ -322,10 +314,10 @@ __global__ void dslash(const LatticeComplex *U, const LatticeComplex *src, Latti
             tmp0 += (src[index_fermi(x, y, tmp, t, 0, c1)] - src[index_fermi(x, y, tmp, t, 2, c1)] * i) * U[index_guage(x, y, z, t, 2, c0, c1)];
             tmp1 += (src[index_fermi(x, y, tmp, t, 1, c1)] + src[index_fermi(x, y, tmp, t, 3, c1)] * i) * U[index_guage(x, y, z, t, 2, c0, c1)];
         }
-        dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
-        dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
-        dest[index_fermi(x, y, z, t, 2, c0)] += tmp0 * i;
-        dest[index_fermi(x, y, z, t, 3, c0)] -= tmp1 * i;
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] += tmp0 * i;
+        local_dest[c0 * lat_s + 3] -= tmp1 * i;
     }
     // backward t
     if (t == 0)
@@ -345,10 +337,10 @@ __global__ void dslash(const LatticeComplex *U, const LatticeComplex *src, Latti
             tmp0 += (src[index_fermi(x, y, z, tmp, 0, c1)] + src[index_fermi(x, y, z, tmp, 2, c1)]) * U[index_guage(x, y, z, tmp, 3, c1, c0)].conj();
             tmp1 += (src[index_fermi(x, y, z, tmp, 1, c1)] + src[index_fermi(x, y, z, tmp, 3, c1)]) * U[index_guage(x, y, z, tmp, 3, c1, c0)].conj();
         }
-        dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
-        dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
-        dest[index_fermi(x, y, z, t, 2, c0)] += tmp0;
-        dest[index_fermi(x, y, z, t, 3, c0)] += tmp1;
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] += tmp0;
+        local_dest[c0 * lat_s + 3] += tmp1;
     }
     // forward t
     if (t == lat_t - 1)
@@ -368,10 +360,18 @@ __global__ void dslash(const LatticeComplex *U, const LatticeComplex *src, Latti
             tmp0 += (src[index_fermi(x, y, z, tmp, 0, c1)] - src[index_fermi(x, y, z, tmp, 2, c1)]) * U[index_guage(x, y, z, t, 3, c0, c1)];
             tmp1 += (src[index_fermi(x, y, z, tmp, 1, c1)] - src[index_fermi(x, y, z, tmp, 3, c1)]) * U[index_guage(x, y, z, t, 3, c0, c1)];
         }
-        dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
-        dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
-        dest[index_fermi(x, y, z, t, 2, c0)] -= tmp0;
-        dest[index_fermi(x, y, z, t, 3, c0)] -= tmp1;
+        local_dest[c0 * lat_s + 0] += tmp0;
+        local_dest[c0 * lat_s + 1] += tmp1;
+        local_dest[c0 * lat_s + 2] -= tmp0;
+        local_dest[c0 * lat_s + 3] -= tmp1;
+    }
+
+    for (int c0 = 0; c0 < lat_c0; c0++)
+    {
+        dest[index_fermi(x, y, z, t, 0, c0)] = local_dest[c0 * lat_s + 0];
+        dest[index_fermi(x, y, z, t, 1, c0)] = local_dest[c0 * lat_s + 1];
+        dest[index_fermi(x, y, z, t, 2, c0)] = local_dest[c0 * lat_s + 2];
+        dest[index_fermi(x, y, z, t, 3, c0)] = local_dest[c0 * lat_s + 3];
     }
 }
 
