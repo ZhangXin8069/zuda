@@ -1,4 +1,4 @@
-# >>> alias:2023-08-01-17-03-20 >>>
+# >>> alias:2023-08-03-20-34-01 >>>
 alias test_zuda_cpuX12.sh='bash /public/home/zhangxin/zuda/tmp/test_zuda_cpuX12.sh'
 alias test_zuda_cuda.sh='bash /public/home/zhangxin/zuda/tmp/test_zuda_cuda.sh'
 alias test_zuda_cpuX8.sh='bash /public/home/zhangxin/zuda/tmp/test_zuda_cpuX8.sh'
@@ -18,4 +18,4 @@ alias test_zuda_cpuX9.sh='bash /public/home/zhangxin/zuda/tmp/test_zuda_cpuX9.sh
 alias test_zuda_cpuX7.sh='bash /public/home/zhangxin/zuda/tmp/test_zuda_cpuX7.sh'
 alias test_zuda_cpuX2.sh='bash /public/home/zhangxin/zuda/tmp/test_zuda_cpuX2.sh'
 alias test_zuda_cpu-checkpoint.sh='bash /public/home/zhangxin/zuda/test/test_zuda_cpu-checkpoint.sh'
-# <<< alias:2023-08-01-17-03-20 <<<
+# <<< alias:2023-08-03-20-34-01 <<<
