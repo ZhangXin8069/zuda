@@ -1,3 +1,5 @@
+#pragma nv_verbose
+#pragma optimize(5)
 #include <iostream>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -27,44 +29,41 @@ struct LatticeComplex
 {
     double real;
     double imag;
-    // double data[2];
-    // double &real = real;
-    // double &imag = imag;
-    __device__ __forceinline__ LatticeComplex(const double &real = 0.0, const double &imag = 0.0) : real(real), imag(imag) {}
-    __device__ __forceinline__ LatticeComplex &operator=(const LatticeComplex &other)
+    __forceinline__ __device__ LatticeComplex(const double &real = 0.0, const double &imag = 0.0) : real(real), imag(imag) {}
+    __forceinline__ __device__ LatticeComplex &operator=(const LatticeComplex &other)
     {
         real = other.real;
         imag = other.imag;
         return *this;
     }
-    __device__ __forceinline__ LatticeComplex operator+(const LatticeComplex &other) const
+    __forceinline__ __device__ LatticeComplex operator+(const LatticeComplex &other) const
     {
         return LatticeComplex(real + other.real, imag + other.imag);
     }
-    __device__ __forceinline__ LatticeComplex operator-(const LatticeComplex &other) const
+    __forceinline__ __device__ LatticeComplex operator-(const LatticeComplex &other) const
     {
         return LatticeComplex(real - other.real, imag - other.imag);
     }
-    __device__ __forceinline__ LatticeComplex operator*(const LatticeComplex &other) const
+    __forceinline__ __device__ LatticeComplex operator*(const LatticeComplex &other) const
     {
         return LatticeComplex(real * other.real - imag * other.imag,
                               real * other.imag + imag * other.real);
     }
-    __device__ __forceinline__ LatticeComplex operator*(const double &other) const
+    __forceinline__ __device__ LatticeComplex operator*(const double &other) const
     {
         return LatticeComplex(real * other, imag * other);
     }
-    __device__ __forceinline__ LatticeComplex operator/(const LatticeComplex &other) const
+    __forceinline__ __device__ LatticeComplex operator/(const LatticeComplex &other) const
     {
         double denom = other.real * other.real + other.imag * other.imag;
         return LatticeComplex((real * other.real + imag * other.imag) / denom,
                               (imag * other.real - real * other.imag) / denom);
     }
-    __device__ __forceinline__ LatticeComplex operator/(const double &other) const
+    __forceinline__ __device__ LatticeComplex operator/(const double &other) const
     {
         return LatticeComplex(real / other, imag / other);
     }
-    __device__ __forceinline__ LatticeComplex operator-() const
+    __forceinline__ __device__ LatticeComplex operator-() const
     {
         return LatticeComplex(-real, -imag);
     }
@@ -76,54 +75,53 @@ struct LatticeComplex
     {
         return !(*this == other);
     }
-    __device__ __forceinline__ LatticeComplex &operator+=(const LatticeComplex &other)
+    __forceinline__ __device__ LatticeComplex &operator+=(const LatticeComplex &other)
     {
         real = real + other.real;
         imag = imag + other.imag;
         return *this;
     }
-    __device__ __forceinline__ LatticeComplex &operator-=(const LatticeComplex &other)
+    __forceinline__ __device__ LatticeComplex &operator-=(const LatticeComplex &other)
     {
         real = real - other.real;
         imag = imag - other.imag;
         return *this;
     }
-    __device__ __forceinline__ LatticeComplex &operator*=(const LatticeComplex &other)
+    __forceinline__ __device__ LatticeComplex &operator*=(const LatticeComplex &other)
     {
         real = real * other.real - imag * other.imag;
         imag = real * other.imag + imag * other.real;
         return *this;
     }
-    __device__ __forceinline__ LatticeComplex &operator*=(const double &other)
+    __forceinline__ __device__ LatticeComplex &operator*=(const double &other)
     {
         real = real * other;
         imag = imag * other;
         return *this;
     }
-    __device__ __forceinline__ LatticeComplex &operator/=(const LatticeComplex &other)
+    __forceinline__ __device__ LatticeComplex &operator/=(const LatticeComplex &other)
     {
         double denom = other.real * other.real + other.imag * other.imag;
         real = (real * other.real + imag * other.imag) / denom;
         imag = (imag * other.real - real * other.imag) / denom;
         return *this;
     }
-    __device__ __forceinline__ LatticeComplex &operator/=(const double &other)
+    __forceinline__ __device__ LatticeComplex &operator/=(const double &other)
     {
         real = real / other;
         imag = imag / other;
         return *this;
     }
-    __device__ __forceinline__ LatticeComplex conj() const
+    __forceinline__ __device__ LatticeComplex conj() const
     {
         return LatticeComplex(real, -imag);
     }
 };
-
-__device__ __forceinline__ int index_guage(const int &index_x, const int &index_y, const int &index_z, const int &index_t, const int &index_s, const int &index_c0, const int &index_c1)
+__forceinline__ __device__ int index_guage(const int &index_x, const int &index_y, const int &index_z, const int &index_t, const int &index_s, const int &index_c0, const int &index_c1)
 {
     return index_x * tmp_yztscc + index_y * tmp_ztscc + index_z * tmp_tscc + index_t * tmp_scc + index_s * tmp_cc + index_c0 * tmp_c + index_c1;
 }
-__device__ __forceinline__ int index_fermi(const int &index_x, const int &index_y, const int &index_z, const int &index_t, const int &index_s, const int &index_c)
+__forceinline__ __device__ int index_fermi(const int &index_x, const int &index_y, const int &index_z, const int &index_t, const int &index_s, const int &index_c)
 {
     return index_x * tmp_yztsc + index_y * tmp_ztsc + index_z * tmp_tsc + index_t * tmp_sc + index_s * tmp_c + index_c;
 }
@@ -153,18 +151,19 @@ class Gamme
     [0,1,0,0]]
     */
 };
+
 __global__ void dslash(const LatticeComplex *U, const LatticeComplex *src, LatticeComplex *dest)
 {
-    int x = blockIdx.x;
-    int y = blockIdx.y;
-    int z = blockIdx.z;
-    int t = threadIdx.x;
-    const LatticeComplex i(0.0, 1.0);
-    const LatticeComplex zero(0.0, 0.0);
-    int tmp;
-    LatticeComplex tmp0(0.0, 0.0);
-    LatticeComplex tmp1(0.0, 0.0);
-    LatticeComplex local_dest[12];
+    register const int x = blockIdx.x;
+    register const int y = blockIdx.y;
+    register const int z = blockIdx.z;
+    register const int t = threadIdx.x;
+    register const LatticeComplex i(0.0, 1.0);
+    register const LatticeComplex zero(0.0, 0.0);
+    register int tmp;
+    register LatticeComplex tmp0(0.0, 0.0);
+    register LatticeComplex tmp1(0.0, 0.0);
+    register LatticeComplex local_dest[12];
     for (int c0 = 0; c0 < lat_c0; c0++)
     {
         local_dest[c0 * lat_s + 0] = dest[index_fermi(x, y, z, t, 0, c0)];
@@ -453,17 +452,14 @@ int main()
     cudaMemcpy((void *)device_dest, (void *)dest, size_fermi * sizeof(LatticeComplex), cudaMemcpyHostToDevice);
     dim3 gridSize(lat_x, lat_y, lat_z);
     dim3 blockSize(lat_t);
+    const int loop(100);
     clock_t start = clock();
-    dslash<<<gridSize, blockSize>>>(device_U, device_src, device_dest);
-    cudaDeviceSynchronize();
-    dslash<<<gridSize, blockSize>>>(device_U, device_src, device_dest);
-    cudaDeviceSynchronize();
-    dslash<<<gridSize, blockSize>>>(device_U, device_src, device_dest);
-    cudaDeviceSynchronize();
-    dslash<<<gridSize, blockSize>>>(device_U, device_src, device_dest);
-    cudaDeviceSynchronize();
-    dslash<<<gridSize, blockSize>>>(device_U, device_src, device_dest);
-    cudaDeviceSynchronize();
+#pragma unroll
+    for (int i = 0; i < loop; i++)
+    {
+        dslash<<<gridSize, blockSize>>>(device_U, device_src, device_dest);
+        cudaDeviceSynchronize();
+    }
     clock_t end0 = clock();
     cudaMemcpy((void *)U, (void *)device_U, size_guage * sizeof(LatticeComplex), cudaMemcpyDeviceToHost);
     cudaMemcpy((void *)src, (void *)device_src, size_fermi * sizeof(LatticeComplex), cudaMemcpyDeviceToHost);
@@ -472,7 +468,7 @@ int main()
     std::cout
         << "################"
         << "time cost without cudaMemcpy:"
-        << (double)(end0 - start) / 5.0 / CLOCKS_PER_SEC
+        << (double)(end0 - start) / loop / CLOCKS_PER_SEC
         << "s"
         << std::endl;
     std::cout

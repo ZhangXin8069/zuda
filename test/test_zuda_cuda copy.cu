@@ -853,6 +853,7 @@ __global__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, c
     coef[1] = 1;
     Complex flag0;
     Complex flag1;
+    /*
     for (int x = 0; x < U.lat_x; x++)
     {
         for (int y = 0; y < U.lat_y; y++)
@@ -1121,6 +1122,7 @@ __global__ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, c
             }
         }
     }
+    */
 }
 
 //__host__ void cg(LatticeGauge &U, LatticeFermi &b, LatticeFermi &x, const int &num_x, const int &num_y, const int &num_z, const int &num_t, const int &MAX_ITER, const double &TOL, const double &test)

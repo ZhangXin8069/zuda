@@ -1,8 +1,14 @@
-#ifndef ZUDA_H
-#define ZUDA_H
 #include <iostream>
 #include <random>
-#include<time.h>
+#include <time.h>
+const int lat_x = 32;
+const int lat_y = 32;
+const int lat_z = 32;
+const int lat_t = 32;
+const int lat_s = 4;
+const int lat_c = 3;
+const int lat_c0 = 3;
+const int lat_c1 = 3;
 class Complex
 {
 public:
@@ -622,6 +628,14 @@ public:
         return result;
     }
 };
+int index_guage(const int &index_x, const int &index_y, const int &index_z, const int &index_t, const int &index_s, const int &index_c0, const int &index_c1)
+{
+    return index_x * lat_y * lat_z * lat_t * lat_s * lat_c0 * lat_c1 + index_y * lat_z * lat_t * lat_s * lat_c0 * lat_c1 + index_z * lat_t * lat_s * lat_c0 * lat_c1 + index_t * lat_s * lat_c0 * lat_c1 + index_s * lat_c0 * lat_c1 + index_c0 * lat_c1 + index_c1;
+}
+int index_fermi(const int &index_x, const int &index_y, const int &index_z, const int &index_t, const int &index_s, const int &index_c)
+{
+    return index_x * lat_y * lat_z * lat_t * lat_s * lat_c + index_y * lat_z * lat_t * lat_s * lat_c + index_z * lat_t * lat_s * lat_c + index_t * lat_s * lat_c + index_s * lat_c + index_c;
+}
 void dslash_test(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest)
 {
     for (int i = 0; i < dest.size; i++)
@@ -641,17 +655,20 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool t
         return;
     }
     dest.assign_zero();
+    LatticeFermi dest0 = dest;
+    LatticeFermi dest1 = dest;
     const Complex i(0.0, 1.0);
-    Complex tmp0[3];
-    Complex tmp1[3];
+    const Complex zero(0.0, 0.0);
+    int tmp;
+    Complex tmp0;
+    Complex tmp1;
+    Complex tmp00[3];
+    Complex tmp10[3];
     Complex g0[2];
     Complex g1[2];
     int s0[2];
     int s1[2];
     int d;
-    // const double a = 1.0;
-    // const double kappa = 1.0;
-    // const double m = -3.5;
     double coef[2];
     coef[0] = 0;
     coef[1] = 1;
@@ -665,262 +682,470 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool t
             for (int z = 0; z < U.lat_z; z++)
             {
                 for (int t = 0; t < U.lat_t; t++)
-                {                    
-                    // mass term and others
-                    for (int s = 0; s < U.lat_s; s++)
-                    {
-                        for (int c = 0; c < U.lat_c0; c++)
-                        {
-                            dest(x, y, z, t, s, c) += src(x, y, z, t, s, c) * coef[0];
-                        }
-                    }
+                {
                     // backward x
-                    int b_x = (x + U.lat_x - 1) % U.lat_x;
-                    d = 0;
-                    tmp0[0] = 0;
-                    tmp0[1] = 0;
-                    tmp0[2] = 0;
-                    tmp1[0] = 0;
-                    tmp1[1] = 0;
-                    tmp1[2] = 0;
-                    s0[0] = 0;
-                    g0[0] = 1;
-                    s0[1] = 3;
-                    g0[1] = i;
-                    s1[0] = 1;
-                    g1[0] = 1;
-                    s1[1] = 2;
-                    g1[1] = i;
-                    flag0 = -i;
-                    flag1 = -i;
-                    for (int c0 = 0; c0 < U.lat_c0; c0++)
+                    // test
                     {
-                        for (int c1 = 0; c1 < U.lat_c1; c1++)
+                        int b_x = (x + U.lat_x - 1) % U.lat_x;
+                        d = 0;
+                        tmp00[0] = 0;
+                        tmp00[1] = 0;
+                        tmp00[2] = 0;
+                        tmp10[0] = 0;
+                        tmp10[1] = 0;
+                        tmp10[2] = 0;
+                        s0[0] = 0;
+                        g0[0] = 1;
+                        s0[1] = 3;
+                        g0[1] = i;
+                        s1[0] = 1;
+                        g1[0] = 1;
+                        s1[1] = 2;
+                        g1[1] = i;
+                        flag0 = -i;
+                        flag1 = -i;
+                        for (int c0 = 0; c0 < U.lat_c0; c0++)
                         {
-                            tmp0[c0] += (src(b_x, y, z, t, s0[0], c1) * g0[0] + src(b_x, y, z, t, s0[1], c1) * g0[1]) * U(b_x, y, z, t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
-                            tmp1[c0] += (src(b_x, y, z, t, s1[0], c1) * g1[0] + src(b_x, y, z, t, s1[1], c1) * g1[1]) * U(b_x, y, z, t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
+                            for (int c1 = 0; c1 < U.lat_c1; c1++)
+                            {
+                                tmp00[c0] += (src(b_x, y, z, t, s0[0], c1) * g0[0] + src(b_x, y, z, t, s0[1], c1) * g0[1]) * U(b_x, y, z, t, d, c1, c0).conj() * coef[1]; // what ? Hermitian operator！
+                                tmp10[c0] += (src(b_x, y, z, t, s1[0], c1) * g1[0] + src(b_x, y, z, t, s1[1], c1) * g1[1]) * U(b_x, y, z, t, d, c1, c0).conj() * coef[1]; // what ? Hermitian operator！
+                            }
+                            dest0(x, y, z, t, 0, c0) += tmp00[c0];
+                            dest0(x, y, z, t, 1, c0) += tmp10[c0];
+                            dest0(x, y, z, t, 2, c0) += tmp10[c0] * flag1;
+                            dest0(x, y, z, t, 3, c0) += tmp00[c0] * flag0;
                         }
-                        dest(x, y, z, t, 0, c0) += tmp0[c0];
-                        dest(x, y, z, t, 1, c0) += tmp1[c0];
-                        dest(x, y, z, t, 2, c0) += tmp1[c0] * flag1;
-                        dest(x, y, z, t, 3, c0) += tmp0[c0] * flag0;
                     }
+                    if (x == 0)
+                    {
+                        tmp = lat_x - 1;
+                    }
+                    else
+                    {
+                        tmp = x - 1;
+                    }
+                    for (int c0 = 0; c0 < lat_c0; c0++)
+                    {
+                        tmp0 = zero;
+                        tmp1 = zero;
+                        for (int c1 = 0; c1 < lat_c1; c1++)
+                        {
+                            tmp0 += (src[index_fermi(tmp, y, z, t, 0, c1)] + src[index_fermi(tmp, y, z, t, 3, c1)] * i) * U[index_guage(tmp, y, z, t, 0, c1, c0)].conj();
+                            tmp1 += (src[index_fermi(tmp, y, z, t, 1, c1)] + src[index_fermi(tmp, y, z, t, 2, c1)] * i) * U[index_guage(tmp, y, z, t, 0, c1, c0)].conj();
+                        }
+                        dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
+                        dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
+                        dest[index_fermi(x, y, z, t, 2, c0)] -= tmp1 * i;
+                        dest[index_fermi(x, y, z, t, 3, c0)] -= tmp0 * i;
+                    }
+                    dest1 = dest0 - dest;
+                    std::cout << "b_x:" << dest1.norm_2() << std::endl;
                     // forward x
-                    int f_x = (x + 1) % U.lat_x;
-                    d = 0;
-                    tmp0[0] = 0;
-                    tmp0[1] = 0;
-                    tmp0[2] = 0;
-                    tmp1[0] = 0;
-                    tmp1[1] = 0;
-                    tmp1[2] = 0;
-                    s0[0] = 0;
-                    g0[0] = 1;
-                    s0[1] = 3;
-                    g0[1] = -i;
-                    s1[0] = 1;
-                    g1[0] = 1;
-                    s1[1] = 2;
-                    g1[1] = -i;
-                    flag0 = i;
-                    flag1 = i;
-                    for (int c0 = 0; c0 < U.lat_c0; c0++)
+                    // test
                     {
-                        for (int c1 = 0; c1 < U.lat_c1; c1++)
+                        int f_x = (x + 1) % U.lat_x;
+                        d = 0;
+                        tmp00[0] = 0;
+                        tmp00[1] = 0;
+                        tmp00[2] = 0;
+                        tmp10[0] = 0;
+                        tmp10[1] = 0;
+                        tmp10[2] = 0;
+                        s0[0] = 0;
+                        g0[0] = 1;
+                        s0[1] = 3;
+                        g0[1] = -i;
+                        s1[0] = 1;
+                        g1[0] = 1;
+                        s1[1] = 2;
+                        g1[1] = -i;
+                        flag0 = i;
+                        flag1 = i;
+                        for (int c0 = 0; c0 < U.lat_c0; c0++)
                         {
-                            tmp0[c0] += (src(f_x, y, z, t, s0[0], c1) * g0[0] + src(f_x, y, z, t, s0[1], c1) * g0[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
-                            tmp1[c0] += (src(f_x, y, z, t, s1[0], c1) * g1[0] + src(f_x, y, z, t, s1[1], c1) * g1[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
+                            for (int c1 = 0; c1 < U.lat_c1; c1++)
+                            {
+                                tmp00[c0] += (src(f_x, y, z, t, s0[0], c1) * g0[0] + src(f_x, y, z, t, s0[1], c1) * g0[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
+                                tmp10[c0] += (src(f_x, y, z, t, s1[0], c1) * g1[0] + src(f_x, y, z, t, s1[1], c1) * g1[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
+                            }
+                            dest0(x, y, z, t, 0, c0) += tmp00[c0];
+                            dest0(x, y, z, t, 1, c0) += tmp10[c0];
+                            dest0(x, y, z, t, 2, c0) += tmp10[c0] * flag1;
+                            dest0(x, y, z, t, 3, c0) += tmp00[c0] * flag0;
                         }
-                        dest(x, y, z, t, 0, c0) += tmp0[c0];
-                        dest(x, y, z, t, 1, c0) += tmp1[c0];
-                        dest(x, y, z, t, 2, c0) += tmp1[c0] * flag1;
-                        dest(x, y, z, t, 3, c0) += tmp0[c0] * flag0;
-                    }
-                    // backward y
-                    int b_y = (y + U.lat_y - 1) % U.lat_y;
-                    d = 1;
-                    tmp0[0] = 0;
-                    tmp0[1] = 0;
-                    tmp0[2] = 0;
-                    tmp1[0] = 0;
-                    tmp1[1] = 0;
-                    tmp1[2] = 0;
-                    s0[0] = 0;
-                    g0[0] = 1;
-                    s0[1] = 3;
-                    g0[1] = -1;
-                    s1[0] = 1;
-                    g1[0] = 1;
-                    s1[1] = 2;
-                    g1[1] = 1;
-                    flag0 = -1;
-                    flag1 = 1;
-                    for (int c0 = 0; c0 < U.lat_c0; c0++)
-                    {
-                        for (int c1 = 0; c1 < U.lat_c1; c1++)
+                        if (x == lat_x - 1)
                         {
-                            tmp0[c0] += (src(x, b_y, z, t, s0[0], c1) * g0[0] + src(x, b_y, z, t, s0[1], c1) * g0[1]) * U(x, b_y, z, t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
-                            tmp1[c0] += (src(x, b_y, z, t, s1[0], c1) * g1[0] + src(x, b_y, z, t, s1[1], c1) * g1[1]) * U(x, b_y, z, t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
+                            tmp = 0;
                         }
-                        dest(x, y, z, t, 0, c0) += tmp0[c0];
-                        dest(x, y, z, t, 1, c0) += tmp1[c0];
-                        dest(x, y, z, t, 2, c0) += tmp1[c0] * flag1;
-                        dest(x, y, z, t, 3, c0) += tmp0[c0] * flag0;
-                    }
-                    // forward y
-                    int f_y = (y + 1) % U.lat_y;
-                    d = 1;
-                    tmp0[0] = 0;
-                    tmp0[1] = 0;
-                    tmp0[2] = 0;
-                    tmp1[0] = 0;
-                    tmp1[1] = 0;
-                    tmp1[2] = 0;
-                    s0[0] = 0;
-                    g0[0] = 1;
-                    s0[1] = 3;
-                    g0[1] = 1;
-                    s1[0] = 1;
-                    g1[0] = 1;
-                    s1[1] = 2;
-                    g1[1] = -1;
-                    flag0 = 1;
-                    flag1 = -1;
-                    for (int c0 = 0; c0 < U.lat_c0; c0++)
-                    {
-                        for (int c1 = 0; c1 < U.lat_c1; c1++)
+                        else
                         {
-                            tmp0[c0] += (src(x, f_y, z, t, s0[0], c1) * g0[0] + src(x, f_y, z, t, s0[1], c1) * g0[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
-                            tmp1[c0] += (src(x, f_y, z, t, s1[0], c1) * g1[0] + src(x, f_y, z, t, s1[1], c1) * g1[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
+                            tmp = x + 1;
                         }
-                        dest(x, y, z, t, 0, c0) += tmp0[c0];
-                        dest(x, y, z, t, 1, c0) += tmp1[c0];
-                        dest(x, y, z, t, 2, c0) += tmp1[c0] * flag1;
-                        dest(x, y, z, t, 3, c0) += tmp0[c0] * flag0;
-                    }
-                    // backward z
-                    int b_z = (z + U.lat_z - 1) % U.lat_z;
-                    d = 2;
-                    tmp0[0] = 0;
-                    tmp0[1] = 0;
-                    tmp0[2] = 0;
-                    tmp1[0] = 0;
-                    tmp1[1] = 0;
-                    tmp1[2] = 0;
-                    s0[0] = 0;
-                    g0[0] = 1;
-                    s0[1] = 2;
-                    g0[1] = i;
-                    s1[0] = 1;
-                    g1[0] = 1;
-                    s1[1] = 3;
-                    g1[1] = -i;
-                    flag0 = -i;
-                    flag1 = i;
-                    for (int c0 = 0; c0 < U.lat_c0; c0++)
-                    {
-                        for (int c1 = 0; c1 < U.lat_c1; c1++)
+                        for (int c0 = 0; c0 < lat_c0; c0++)
                         {
-                            tmp0[c0] += (src(x, y, b_z, t, s0[0], c1) * g0[0] + src(x, y, b_z, t, s0[1], c1) * g0[1]) * U(x, y, b_z, t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
-                            tmp1[c0] += (src(x, y, b_z, t, s1[0], c1) * g1[0] + src(x, y, b_z, t, s1[1], c1) * g1[1]) * U(x, y, b_z, t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
+                            tmp0 = zero;
+                            tmp1 = zero;
+                            for (int c1 = 0; c1 < lat_c1; c1++)
+                            {
+                                tmp0 += (src[index_fermi(tmp, y, z, t, 0, c1)] - src[index_fermi(tmp, y, z, t, 3, c1)] * i) * U[index_guage(x, y, z, t, 0, c0, c1)];
+                                tmp1 += (src[index_fermi(tmp, y, z, t, 1, c1)] - src[index_fermi(tmp, y, z, t, 2, c1)] * i) * U[index_guage(x, y, z, t, 0, c0, c1)];
+                            }
+                            dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
+                            dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
+                            dest[index_fermi(x, y, z, t, 2, c0)] += tmp1 * i;
+                            dest[index_fermi(x, y, z, t, 3, c0)] += tmp0 * i;
                         }
-                        dest(x, y, z, t, 0, c0) += tmp0[c0];
-                        dest(x, y, z, t, 1, c0) += tmp1[c0];
-                        dest(x, y, z, t, 2, c0) += tmp0[c0] * flag0;
-                        dest(x, y, z, t, 3, c0) += tmp1[c0] * flag1;
-                    }
-                    // forward z
-                    int f_z = (z + 1) % U.lat_z;
-                    d = 2;
-                    tmp0[0] = 0;
-                    tmp0[1] = 0;
-                    tmp0[2] = 0;
-                    tmp1[0] = 0;
-                    tmp1[1] = 0;
-                    tmp1[2] = 0;
-                    s0[0] = 0;
-                    g0[0] = 1;
-                    s0[1] = 2;
-                    g0[1] = -i;
-                    s1[0] = 1;
-                    g1[0] = 1;
-                    s1[1] = 3;
-                    g1[1] = i;
-                    flag0 = i;
-                    flag1 = -i;
-                    for (int c0 = 0; c0 < U.lat_c0; c0++)
-                    {
-                        for (int c1 = 0; c1 < U.lat_c1; c1++)
+                        dest1 = dest0 - dest;
+                        std::cout << "f_x:" << dest1.norm_2() << std::endl;
+                        // backward y
+                        // test
                         {
-                            tmp0[c0] += (src(x, y, f_z, t, s0[0], c1) * g0[0] + src(x, y, f_z, t, s0[1], c1) * g0[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
-                            tmp1[c0] += (src(x, y, f_z, t, s1[0], c1) * g1[0] + src(x, y, f_z, t, s1[1], c1) * g1[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
+                            int b_y = (y + U.lat_y - 1) % U.lat_y;
+                            d = 1;
+                            tmp00[0] = 0;
+                            tmp00[1] = 0;
+                            tmp00[2] = 0;
+                            tmp10[0] = 0;
+                            tmp10[1] = 0;
+                            tmp10[2] = 0;
+                            s0[0] = 0;
+                            g0[0] = 1;
+                            s0[1] = 3;
+                            g0[1] = -1;
+                            s1[0] = 1;
+                            g1[0] = 1;
+                            s1[1] = 2;
+                            g1[1] = 1;
+                            flag0 = -1;
+                            flag1 = 1;
+                            for (int c0 = 0; c0 < U.lat_c0; c0++)
+                            {
+                                for (int c1 = 0; c1 < U.lat_c1; c1++)
+                                {
+                                    tmp00[c0] += (src(x, b_y, z, t, s0[0], c1) * g0[0] + src(x, b_y, z, t, s0[1], c1) * g0[1]) * U(x, b_y, z, t, d, c1, c0).conj() * coef[1]; // what ? Hermitian operator！
+                                    tmp10[c0] += (src(x, b_y, z, t, s1[0], c1) * g1[0] + src(x, b_y, z, t, s1[1], c1) * g1[1]) * U(x, b_y, z, t, d, c1, c0).conj() * coef[1]; // what ? Hermitian operator！
+                                }
+                                dest0(x, y, z, t, 0, c0) += tmp00[c0];
+                                dest0(x, y, z, t, 1, c0) += tmp10[c0];
+                                dest0(x, y, z, t, 2, c0) += tmp10[c0] * flag1;
+                                dest0(x, y, z, t, 3, c0) += tmp00[c0] * flag0;
+                            }
                         }
-                        dest(x, y, z, t, 0, c0) += tmp0[c0];
-                        dest(x, y, z, t, 1, c0) += tmp1[c0];
-                        dest(x, y, z, t, 2, c0) += tmp0[c0] * flag0;
-                        dest(x, y, z, t, 3, c0) += tmp1[c0] * flag1;
-                    }
-                    // backward t
-                    int b_t = (t + U.lat_t - 1) % U.lat_t;
-                    d = 3;
-                    tmp0[0] = 0;
-                    tmp0[1] = 0;
-                    tmp0[2] = 0;
-                    tmp1[0] = 0;
-                    tmp1[1] = 0;
-                    tmp1[2] = 0;
-                    s0[0] = 0;
-                    g0[0] = 1;
-                    s0[1] = 2;
-                    g0[1] = 1;
-                    s1[0] = 1;
-                    g1[0] = 1;
-                    s1[1] = 3;
-                    g1[1] = 1;
-                    flag0 = 1;
-                    flag1 = 1;
-                    for (int c0 = 0; c0 < U.lat_c0; c0++)
-                    {
-                        for (int c1 = 0; c1 < U.lat_c1; c1++)
+                        if (y == 0)
                         {
-                            tmp0[c0] += (src(x, y, z, b_t, s0[0], c1) * g0[0] + src(x, y, z, b_t, s0[1], c1) * g0[1]) * U(x, y, z, b_t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
-                            tmp1[c0] += (src(x, y, z, b_t, s1[0], c1) * g1[0] + src(x, y, z, b_t, s1[1], c1) * g1[1]) * U(x, y, z, b_t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
+                            tmp = lat_y - 1;
                         }
-                        dest(x, y, z, t, 0, c0) += tmp0[c0];
-                        dest(x, y, z, t, 1, c0) += tmp1[c0];
-                        dest(x, y, z, t, 2, c0) += tmp0[c0] * flag0;
-                        dest(x, y, z, t, 3, c0) += tmp1[c0] * flag1;
-                    }
-                    // forward t
-                    int f_t = (t + 1) % U.lat_t;
-                    d = 3;
-                    tmp0[0] = 0;
-                    tmp0[1] = 0;
-                    tmp0[2] = 0;
-                    tmp1[0] = 0;
-                    tmp1[1] = 0;
-                    tmp1[2] = 0;
-                    s0[0] = 0;
-                    g0[0] = 1;
-                    s0[1] = 2;
-                    g0[1] = -1;
-                    s1[0] = 1;
-                    g1[0] = 1;
-                    s1[1] = 3;
-                    g1[1] = -1;
-                    flag0 = -1;
-                    flag1 = -1;
-                    for (int c0 = 0; c0 < U.lat_c0; c0++)
-                    {
-                        for (int c1 = 0; c1 < U.lat_c1; c1++)
+                        else
                         {
-                            tmp0[c0] += (src(x, y, z, f_t, s0[0], c1) * g0[0] + src(x, y, z, f_t, s0[1], c1) * g0[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
-                            tmp1[c0] += (src(x, y, z, f_t, s1[0], c1) * g1[0] + src(x, y, z, f_t, s1[1], c1) * g1[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
+                            tmp = y - 1;
                         }
-                        dest(x, y, z, t, 0, c0) += tmp0[c0];
-                        dest(x, y, z, t, 1, c0) += tmp1[c0];
-                        dest(x, y, z, t, 2, c0) += tmp0[c0] * flag0;
-                        dest(x, y, z, t, 3, c0) += tmp1[c0] * flag1;
+                        for (int c0 = 0; c0 < lat_c0; c0++)
+                        {
+                            tmp0 = zero;
+                            tmp1 = zero;
+                            for (int c1 = 0; c1 < lat_c1; c1++)
+                            {
+                                tmp0 += (src[index_fermi(x, tmp, z, t, 0, c1)] - src[index_fermi(x, tmp, z, t, 3, c1)]) * U[index_guage(x, tmp, z, t, 1, c1, c0)].conj();
+                                tmp1 += (src[index_fermi(x, tmp, z, t, 1, c1)] + src[index_fermi(x, tmp, z, t, 2, c1)]) * U[index_guage(x, tmp, z, t, 1, c1, c0)].conj();
+                            }
+                            dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
+                            dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
+                            dest[index_fermi(x, y, z, t, 2, c0)] += tmp1;
+                            dest[index_fermi(x, y, z, t, 3, c0)] -= tmp0;
+                        }
+                        dest1 = dest0 - dest;
+                        std::cout << "b_y:" << dest1.norm_2() << std::endl;
+                        // forward y
+                        // test
+                        {
+                            int f_y = (y + 1) % U.lat_y;
+                            d = 1;
+                            tmp00[0] = 0;
+                            tmp00[1] = 0;
+                            tmp00[2] = 0;
+                            tmp10[0] = 0;
+                            tmp10[1] = 0;
+                            tmp10[2] = 0;
+                            s0[0] = 0;
+                            g0[0] = 1;
+                            s0[1] = 3;
+                            g0[1] = 1;
+                            s1[0] = 1;
+                            g1[0] = 1;
+                            s1[1] = 2;
+                            g1[1] = -1;
+                            flag0 = 1;
+                            flag1 = -1;
+                            for (int c0 = 0; c0 < U.lat_c0; c0++)
+                            {
+                                for (int c1 = 0; c1 < U.lat_c1; c1++)
+                                {
+                                    tmp00[c0] += (src(x, f_y, z, t, s0[0], c1) * g0[0] + src(x, f_y, z, t, s0[1], c1) * g0[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
+                                    tmp10[c0] += (src(x, f_y, z, t, s1[0], c1) * g1[0] + src(x, f_y, z, t, s1[1], c1) * g1[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
+                                }
+                                dest0(x, y, z, t, 0, c0) += tmp00[c0];
+                                dest0(x, y, z, t, 1, c0) += tmp10[c0];
+                                dest0(x, y, z, t, 2, c0) += tmp10[c0] * flag1;
+                                dest0(x, y, z, t, 3, c0) += tmp00[c0] * flag0;
+                            }
+                        }
+                        if (y == lat_y - 1)
+                        {
+                            tmp = 0;
+                        }
+                        else
+                        {
+                            tmp = y + 1;
+                        }
+                        for (int c0 = 0; c0 < lat_c0; c0++)
+                        {
+                            tmp0 = zero;
+                            tmp1 = zero;
+                            for (int c1 = 0; c1 < lat_c1; c1++)
+                            {
+                                tmp0 += (src[index_fermi(x, tmp, z, t, 0, c1)] + src[index_fermi(x, tmp, z, t, 3, c1)]) * U[index_guage(x, y, z, t, 1, c0, c1)];
+                                tmp1 += (src[index_fermi(x, tmp, z, t, 1, c1)] - src[index_fermi(x, tmp, z, t, 2, c1)]) * U[index_guage(x, y, z, t, 1, c0, c1)];
+                            }
+                            dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
+                            dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
+                            dest[index_fermi(x, y, z, t, 2, c0)] -= tmp1;
+                            dest[index_fermi(x, y, z, t, 3, c0)] += tmp0;
+                        }
+                        dest1 = dest0 - dest;
+                        std::cout << "b_t:" << dest1.norm_2() << std::endl;
+                        // backward z
+                        // test
+                        {
+                            int b_z = (z + U.lat_z - 1) % U.lat_z;
+                            d = 2;
+                            tmp00[0] = 0;
+                            tmp00[1] = 0;
+                            tmp00[2] = 0;
+                            tmp10[0] = 0;
+                            tmp10[1] = 0;
+                            tmp10[2] = 0;
+                            s0[0] = 0;
+                            g0[0] = 1;
+                            s0[1] = 2;
+                            g0[1] = i;
+                            s1[0] = 1;
+                            g1[0] = 1;
+                            s1[1] = 3;
+                            g1[1] = -i;
+                            flag0 = -i;
+                            flag1 = i;
+                            for (int c0 = 0; c0 < U.lat_c0; c0++)
+                            {
+                                for (int c1 = 0; c1 < U.lat_c1; c1++)
+                                {
+                                    tmp00[c0] += (src(x, y, b_z, t, s0[0], c1) * g0[0] + src(x, y, b_z, t, s0[1], c1) * g0[1]) * U(x, y, b_z, t, d, c1, c0).conj() * coef[1]; // what ? Hermitian operator！
+                                    tmp10[c0] += (src(x, y, b_z, t, s1[0], c1) * g1[0] + src(x, y, b_z, t, s1[1], c1) * g1[1]) * U(x, y, b_z, t, d, c1, c0).conj() * coef[1]; // what ? Hermitian operator！
+                                }
+                                dest0(x, y, z, t, 0, c0) += tmp00[c0];
+                                dest0(x, y, z, t, 1, c0) += tmp10[c0];
+                                dest0(x, y, z, t, 2, c0) += tmp00[c0] * flag0;
+                                dest0(x, y, z, t, 3, c0) += tmp10[c0] * flag1;
+                            }
+                        }
+                        if (z == 0)
+                        {
+                            tmp = lat_z - 1;
+                        }
+                        else
+                        {
+                            tmp = z - 1;
+                        }
+                        for (int c0 = 0; c0 < lat_c0; c0++)
+                        {
+                            tmp0 = zero;
+                            tmp1 = zero;
+                            for (int c1 = 0; c1 < lat_c1; c1++)
+                            {
+                                tmp0 += (src[index_fermi(x, y, tmp, t, 0, c1)] + src[index_fermi(x, y, tmp, t, 2, c1)] * i) * U[index_guage(x, y, tmp, t, 2, c0, c1)].conj();
+                                tmp1 += (src[index_fermi(x, y, tmp, t, 1, c1)] - src[index_fermi(x, y, tmp, t, 3, c1)] * i) * U[index_guage(x, y, tmp, t, 2, c0, c1)].conj();
+                            }
+                            dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
+                            dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
+                            dest[index_fermi(x, y, z, t, 2, c0)] -= tmp0 * i;
+                            dest[index_fermi(x, y, z, t, 3, c0)] += tmp1 * i;
+                        }
+                        dest1 = dest0 - dest;
+                        std::cout << "b_z:" << dest1.norm_2() << std::endl;
+                        // forward z
+                        // test
+                        {
+                            int f_z = (z + 1) % U.lat_z;
+                            d = 2;
+                            tmp00[0] = 0;
+                            tmp00[1] = 0;
+                            tmp00[2] = 0;
+                            tmp10[0] = 0;
+                            tmp10[1] = 0;
+                            tmp10[2] = 0;
+                            s0[0] = 0;
+                            g0[0] = 1;
+                            s0[1] = 2;
+                            g0[1] = -i;
+                            s1[0] = 1;
+                            g1[0] = 1;
+                            s1[1] = 3;
+                            g1[1] = i;
+                            flag0 = i;
+                            flag1 = -i;
+                            for (int c0 = 0; c0 < U.lat_c0; c0++)
+                            {
+                                for (int c1 = 0; c1 < U.lat_c1; c1++)
+                                {
+                                    tmp00[c0] += (src(x, y, f_z, t, s0[0], c1) * g0[0] + src(x, y, f_z, t, s0[1], c1) * g0[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
+                                    tmp10[c0] += (src(x, y, f_z, t, s1[0], c1) * g1[0] + src(x, y, f_z, t, s1[1], c1) * g1[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
+                                }
+                                dest0(x, y, z, t, 0, c0) += tmp00[c0];
+                                dest0(x, y, z, t, 1, c0) += tmp10[c0];
+                                dest0(x, y, z, t, 2, c0) += tmp00[c0] * flag0;
+                                dest0(x, y, z, t, 3, c0) += tmp10[c0] * flag1;
+                            }
+                        }
+                        if (z == lat_z - 1)
+                        {
+                            tmp = 0;
+                        }
+                        else
+                        {
+                            tmp = z + 1;
+                        }
+                        for (int c0 = 0; c0 < lat_c0; c0++)
+                        {
+                            tmp0 = zero;
+                            tmp1 = zero;
+                            for (int c1 = 0; c1 < lat_c1; c1++)
+                            {
+                                tmp0 += (src[index_fermi(x, y, tmp, t, 0, c1)] - src[index_fermi(x, y, tmp, t, 2, c1)] * i) * U[index_guage(x, y, z, t, 2, c1, c0)];
+                                tmp1 += (src[index_fermi(x, y, tmp, t, 1, c1)] + src[index_fermi(x, y, tmp, t, 3, c1)] * i) * U[index_guage(x, y, z, t, 2, c1, c0)];
+                            }
+                            dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
+                            dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
+                            dest[index_fermi(x, y, z, t, 2, c0)] += tmp0 * i;
+                            dest[index_fermi(x, y, z, t, 3, c0)] -= tmp1 * i;
+                        }
+                        dest1 = dest0 - dest;
+                        std::cout << "f_z:" << dest1.norm_2() << std::endl;
+                        // backward t
+                        // test
+                        {
+                            int b_t = (t + U.lat_t - 1) % U.lat_t;
+                            d = 3;
+                            tmp00[0] = 0;
+                            tmp00[1] = 0;
+                            tmp00[2] = 0;
+                            tmp10[0] = 0;
+                            tmp10[1] = 0;
+                            tmp10[2] = 0;
+                            s0[0] = 0;
+                            g0[0] = 1;
+                            s0[1] = 2;
+                            g0[1] = 1;
+                            s1[0] = 1;
+                            g1[0] = 1;
+                            s1[1] = 3;
+                            g1[1] = 1;
+                            flag0 = 1;
+                            flag1 = 1;
+                            for (int c0 = 0; c0 < U.lat_c0; c0++)
+                            {
+                                for (int c1 = 0; c1 < U.lat_c1; c1++)
+                                {
+                                    tmp00[c0] += (src(x, y, z, b_t, s0[0], c1) * g0[0] + src(x, y, z, b_t, s0[1], c1) * g0[1]) * U(x, y, z, b_t, d, c1, c0).conj() * coef[1]; // what ? Hermitian operator！
+                                    tmp10[c0] += (src(x, y, z, b_t, s1[0], c1) * g1[0] + src(x, y, z, b_t, s1[1], c1) * g1[1]) * U(x, y, z, b_t, d, c1, c0).conj() * coef[1]; // what ? Hermitian operator！
+                                }
+                                dest0(x, y, z, t, 0, c0) += tmp00[c0];
+                                dest0(x, y, z, t, 1, c0) += tmp10[c0];
+                                dest0(x, y, z, t, 2, c0) += tmp00[c0] * flag0;
+                                dest0(x, y, z, t, 3, c0) += tmp10[c0] * flag1;
+                            }
+                        }
+                        if (t == 0)
+                        {
+                            tmp = lat_t - 1;
+                        }
+                        else
+                        {
+                            tmp = t - 1;
+                        }
+                        for (int c0 = 0; c0 < lat_c0; c0++)
+                        {
+                            tmp0 = zero;
+                            tmp1 = zero;
+                            for (int c1 = 0; c1 < lat_c1; c1++)
+                            {
+                                tmp0 += (src[index_fermi(x, y, z, tmp, 0, c1)] + src[index_fermi(x, y, z, tmp, 2, c1)]) * U[index_guage(x, y, z, tmp, 3, c0, c1)].conj();
+                                tmp1 += (src[index_fermi(x, y, z, tmp, 1, c1)] + src[index_fermi(x, y, z, tmp, 3, c1)]) * U[index_guage(x, y, z, tmp, 3, c0, c1)].conj();
+                            }
+                            dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
+                            dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
+                            dest[index_fermi(x, y, z, t, 2, c0)] += tmp0;
+                            dest[index_fermi(x, y, z, t, 3, c0)] += tmp1;
+                        }
+                        dest1 = dest0 - dest;
+                        std::cout << "b_t:" << dest1.norm_2() << std::endl;
+                        // forward t
+                        // test
+                        {
+                            int f_t = (t + 1) % U.lat_t;
+                            d = 3;
+                            tmp00[0] = 0;
+                            tmp00[1] = 0;
+                            tmp00[2] = 0;
+                            tmp10[0] = 0;
+                            tmp10[1] = 0;
+                            tmp10[2] = 0;
+                            s0[0] = 0;
+                            g0[0] = 1;
+                            s0[1] = 2;
+                            g0[1] = -1;
+                            s1[0] = 1;
+                            g1[0] = 1;
+                            s1[1] = 3;
+                            g1[1] = -1;
+                            flag0 = -1;
+                            flag1 = -1;
+                            for (int c0 = 0; c0 < U.lat_c0; c0++)
+                            {
+                                for (int c1 = 0; c1 < U.lat_c1; c1++)
+                                {
+                                    tmp00[c0] += (src(x, y, z, f_t, s0[0], c1) * g0[0] + src(x, y, z, f_t, s0[1], c1) * g0[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
+                                    tmp10[c0] += (src(x, y, z, f_t, s1[0], c1) * g1[0] + src(x, y, z, f_t, s1[1], c1) * g1[1]) * U(x, y, z, t, d, c0, c1) * coef[1];
+                                }
+                                dest0(x, y, z, t, 0, c0) += tmp00[c0];
+                                dest0(x, y, z, t, 1, c0) += tmp10[c0];
+                                dest0(x, y, z, t, 2, c0) += tmp00[c0] * flag0;
+                                dest0(x, y, z, t, 3, c0) += tmp10[c0] * flag1;
+                            }
+                        }
+                        if (t == lat_t - 1)
+                        {
+                            tmp = 0;
+                        }
+                        else
+                        {
+                            tmp = t + 1;
+                        }
+                        for (int c0 = 0; c0 < lat_c0; c0++)
+                        {
+                            tmp0 = zero;
+                            tmp1 = zero;
+                            for (int c1 = 0; c1 < lat_c1; c1++)
+                            {
+                                tmp0 += (src[index_fermi(x, y, z, tmp, 0, c1)] - src[index_fermi(x, y, z, tmp, 2, c1)]) * U[index_guage(x, y, z, t, 3, c1, c0)];
+                                tmp1 += (src[index_fermi(x, y, z, tmp, 1, c1)] - src[index_fermi(x, y, z, tmp, 3, c1)]) * U[index_guage(x, y, z, t, 3, c1, c0)];
+                            }
+                            dest[index_fermi(x, y, z, t, 0, c0)] += tmp0;
+                            dest[index_fermi(x, y, z, t, 1, c0)] += tmp1;
+                            dest[index_fermi(x, y, z, t, 2, c0)] -= tmp0;
+                            dest[index_fermi(x, y, z, t, 3, c0)] -= tmp1;
+                        }
+                        dest1 = dest0 - dest;
+                        std::cout << "f_t:" << dest1.norm_2() << std::endl;
                     }
                 }
             }
@@ -930,7 +1155,7 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool t
     std::cout << "######time cost:" << (double)(end - start) / CLOCKS_PER_SEC << std::endl;
     std::cout << "######dest.norm_2():" << dest.norm_2() << std::endl;
 }
-void cg(LatticeGauge &U,const LatticeFermi &b, LatticeFermi &x, const int &MAX_ITER, const double &TOL, const double &test)
+void cg(LatticeGauge &U, const LatticeFermi &b, LatticeFermi &x, const int &MAX_ITER, const double &TOL, const double &test)
 {
     Complex rho_prev(1.0, 0.0), rho(0.0, 0.0), alpha(1.0, 0.0), omega(1.0, 0.0), beta(0.0, 0.0);
     double r_norm2 = 0;
@@ -1035,4 +1260,14 @@ void ext_cg(const double *U_real, const double *U_imag, const double *b_real, co
         x_imag[i] = x[i].data[1];
     }
 }
-#endif
+int main()
+{
+    LatticeGauge U(lat_x, lat_y, lat_z, lat_t, lat_c);
+    LatticeFermi src(lat_x, lat_y, lat_z, lat_t, lat_c);
+    LatticeFermi dest(lat_x, lat_y, lat_z, lat_t, lat_c);
+    U.assign_random(666);
+    src.assign_random(777);
+    dest.assign_random(888);
+    dslash(U, src, dest, false);
+    return 0;
+}
