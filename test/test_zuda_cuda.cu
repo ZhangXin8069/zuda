@@ -456,6 +456,14 @@ int main()
     clock_t start = clock();
     dslash<<<gridSize, blockSize>>>(device_U, device_src, device_dest);
     cudaDeviceSynchronize();
+    dslash<<<gridSize, blockSize>>>(device_U, device_src, device_dest);
+    cudaDeviceSynchronize();
+    dslash<<<gridSize, blockSize>>>(device_U, device_src, device_dest);
+    cudaDeviceSynchronize();
+    dslash<<<gridSize, blockSize>>>(device_U, device_src, device_dest);
+    cudaDeviceSynchronize();
+    dslash<<<gridSize, blockSize>>>(device_U, device_src, device_dest);
+    cudaDeviceSynchronize();
     clock_t end0 = clock();
     cudaMemcpy((void *)U, (void *)device_U, size_guage * sizeof(LatticeComplex), cudaMemcpyDeviceToHost);
     cudaMemcpy((void *)src, (void *)device_src, size_fermi * sizeof(LatticeComplex), cudaMemcpyDeviceToHost);
@@ -464,7 +472,7 @@ int main()
     std::cout
         << "################"
         << "time cost without cudaMemcpy:"
-        << (double)(end0 - start) / CLOCKS_PER_SEC
+        << (double)(end0 - start) / 5.0 / CLOCKS_PER_SEC
         << "s"
         << std::endl;
     std::cout
