@@ -5,6 +5,7 @@
 #include <cuda_runtime.h>
 #include <time.h>
 #include <random>
+
 __device__ const int lat_x = 32;
 __device__ const int lat_y = 32;
 __device__ const int lat_z = 32;

@@ -2,96 +2,97 @@
 #define ZUDA_H
 #include <iostream>
 #include <random>
-#include<time.h>
+#include <time.h>
 class Complex
 {
 public:
-    double data[2];
+    double real;
+    double imag;
     Complex(double real = 0.0, double imag = 0.0)
     {
-        this->data[0] = real;
-        this->data[1] = imag;
+        this->real = real;
+        this->imag = imag;
     }
     Complex &operator=(const Complex &other)
     {
         if (this != &other)
         {
-            this->data[0] = other.data[0];
-            this->data[1] = other.data[1];
+            this->real = other.real;
+            this->imag = other.imag;
         }
         return *this;
     }
     Complex operator+(const Complex &other) const
     {
-        return Complex(this->data[0] + other.data[0], this->data[1] + other.data[1]);
+        return Complex(this->real + other.real, this->imag + other.imag);
     }
     Complex operator-(const Complex &other) const
     {
-        return Complex(this->data[0] - other.data[0], this->data[1] - other.data[1]);
+        return Complex(this->real - other.real, this->imag - other.imag);
     }
     Complex operator*(const Complex &other) const
     {
-        return Complex(this->data[0] * other.data[0] - this->data[1] * other.data[1],
-                       this->data[0] * other.data[1] + this->data[1] * other.data[0]);
+        return Complex(this->real * other.real - this->imag * other.imag,
+                       this->real * other.imag + this->imag * other.real);
     }
     Complex operator*(const double &other) const
     {
-        return Complex(this->data[0] * other, this->data[1] * other);
+        return Complex(this->real * other, this->imag * other);
     }
     Complex operator/(const Complex &other) const
     {
-        double denom = other.data[0] * other.data[0] + other.data[1] * other.data[1];
-        return Complex((this->data[0] * other.data[0] + this->data[1] * other.data[1]) / denom,
-                       (this->data[1] * other.data[0] - this->data[0] * other.data[1]) / denom);
+        double denom = other.real * other.real + other.imag * other.imag;
+        return Complex((this->real * other.real + this->imag * other.imag) / denom,
+                       (this->imag * other.real - this->real * other.imag) / denom);
     }
     Complex operator/(const double &other) const
     {
-        return Complex(this->data[0] / other, this->data[1] / other);
+        return Complex(this->real / other, this->imag / other);
     }
     Complex operator-() const
     {
-        return Complex(-this->data[0], -this->data[1]);
+        return Complex(-this->real, -this->imag);
     }
     Complex &operator+=(const Complex &other)
     {
-        this->data[0] += other.data[0];
-        this->data[1] += other.data[1];
+        this->real += other.real;
+        this->imag += other.imag;
         return *this;
     }
     Complex &operator-=(const Complex &other)
     {
-        this->data[0] -= other.data[0];
-        this->data[1] -= other.data[1];
+        this->real -= other.real;
+        this->imag -= other.imag;
         return *this;
     }
     Complex &operator*=(const Complex &other)
     {
-        this->data[0] = this->data[0] * other.data[0] - this->data[1] * other.data[1];
-        this->data[1] = this->data[0] * other.data[1] + this->data[1] * other.data[0];
+        this->real = this->real * other.real - this->imag * other.imag;
+        this->imag = this->real * other.imag + this->imag * other.real;
         return *this;
     }
     Complex &operator*=(const double &scalar)
     {
-        this->data[0] *= scalar;
-        this->data[1] *= scalar;
+        this->real *= scalar;
+        this->imag *= scalar;
         return *this;
     }
     Complex &operator/=(const Complex &other)
     {
-        double denom = other.data[0] * other.data[0] + other.data[1] * other.data[1];
-        this->data[0] = (data[0] * other.data[0] + data[1] * other.data[1]) / denom;
-        this->data[1] = (data[1] * other.data[0] - data[0] * other.data[1]) / denom;
+        double denom = other.real * other.real + other.imag * other.imag;
+        this->real = (real * other.real + imag * other.imag) / denom;
+        this->imag = (imag * other.real - real * other.imag) / denom;
         return *this;
     }
     Complex &operator/=(const double &other)
     {
-        this->data[0] /= other;
-        this->data[1] /= other;
+        this->real /= other;
+        this->imag /= other;
         return *this;
     }
     bool operator==(const Complex &other) const
     {
-        return (this->data[0] == other.data[0] && this->data[1] == other.data[1]);
+        return (this->real == other.real && this->imag == other.imag);
     }
     bool operator!=(const Complex &other) const
     {
@@ -99,22 +100,21 @@ public:
     }
     friend std::ostream &operator<<(std::ostream &os, const Complex &c)
     {
-        if (c.data[1] >= 0.0)
+        if (c.imag >= 0.0)
         {
-            os << c.data[0] << " + " << c.data[1] << "i";
+            os << c.real << " + " << c.imag << "i";
         }
         else
         {
-            os << c.data[0] << " - " << std::abs(c.data[1]) << "i";
+            os << c.real << " - " << std::abs(c.imag) << "i";
         }
         return os;
     }
     Complex conj()
     {
-        return Complex(this->data[0], -this->data[1]);
+        return Complex(this->real, -this->imag);
     }
 };
-
 class LatticeFermi
 {
 public:
@@ -158,16 +158,16 @@ public:
     {
         for (int i = 0; i < this->size; i++)
         {
-            this->lattice_vec[i].data[0] = 0;
-            this->lattice_vec[i].data[1] = 0;
+            this->lattice_vec[i].real = 0;
+            this->lattice_vec[i].imag = 0;
         }
     }
     void assign_unit()
     {
         for (int i = 0; i < this->size; i++)
         {
-            this->lattice_vec[i].data[0] = 1;
-            this->lattice_vec[i].data[1] = 0;
+            this->lattice_vec[i].real = 1;
+            this->lattice_vec[i].imag = 0;
         }
     }
     void assign_random(unsigned seed = 32767)
@@ -176,8 +176,8 @@ public:
         std::uniform_real_distribution<double> u(0.0, 1.0);
         for (int i = 0; i < this->size; i++)
         {
-            this->lattice_vec[i].data[0] = u(e);
-            this->lattice_vec[i].data[1] = u(e);
+            this->lattice_vec[i].real = u(e);
+            this->lattice_vec[i].imag = u(e);
         }
     }
     void info()
@@ -339,7 +339,7 @@ public:
         double result = 0;
         for (int i = 0; i < this->size; i++)
         {
-            result = result + this->lattice_vec[i].data[0] * this->lattice_vec[i].data[0] + this->lattice_vec[i].data[1] * this->lattice_vec[i].data[1];
+            result = result + this->lattice_vec[i].real * this->lattice_vec[i].real + this->lattice_vec[i].imag * this->lattice_vec[i].imag;
         }
         return result;
     }
@@ -378,7 +378,6 @@ class Gamme
     [0,1,0,0]]
     */
 };
-
 class LatticeGauge
 {
 public:
@@ -423,16 +422,16 @@ public:
     {
         for (int i = 0; i < this->size; i++)
         {
-            this->lattice_vec[i].data[0] = 0;
-            this->lattice_vec[i].data[1] = 0;
+            this->lattice_vec[i].real = 0;
+            this->lattice_vec[i].imag = 0;
         }
     }
     void assign_unit()
     {
         for (int i = 0; i < this->size; i++)
         {
-            this->lattice_vec[i].data[0] = 1;
-            this->lattice_vec[i].data[1] = 0;
+            this->lattice_vec[i].real = 1;
+            this->lattice_vec[i].imag = 0;
         }
     }
     void assign_random(unsigned seed = 32767)
@@ -441,8 +440,8 @@ public:
         std::uniform_real_distribution<double> u(0.0, 1.0);
         for (int i = 0; i < this->size; i++)
         {
-            this->lattice_vec[i].data[0] = u(e);
-            this->lattice_vec[i].data[1] = u(e);
+            this->lattice_vec[i].real = u(e);
+            this->lattice_vec[i].imag = u(e);
         }
     }
     void info()
@@ -608,7 +607,7 @@ public:
         double result = 0;
         for (int i = 0; i < this->size; i++)
         {
-            result = result + this->lattice_vec[i].data[0] * this->lattice_vec[i].data[0] + this->lattice_vec[i].data[1] * this->lattice_vec[i].data[1];
+            result = result + this->lattice_vec[i].real * this->lattice_vec[i].real + this->lattice_vec[i].imag * this->lattice_vec[i].imag;
         }
         return result;
     }
@@ -628,7 +627,6 @@ void dslash_test(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest)
     {
         dest.lattice_vec[i] = src.lattice_vec[i] * 0.5;
     }
-
     dest.lattice_vec[0] *= 2;
 }
 void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool test)
@@ -665,7 +663,7 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool t
             for (int z = 0; z < U.lat_z; z++)
             {
                 for (int t = 0; t < U.lat_t; t++)
-                {                    
+                {
                     // mass term and others
                     for (int s = 0; s < U.lat_s; s++)
                     {
@@ -697,8 +695,10 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool t
                     {
                         for (int c1 = 0; c1 < U.lat_c1; c1++)
                         {
-                            tmp0[c0] += (src(b_x, y, z, t, s0[0], c1) * g0[0] + src(b_x, y, z, t, s0[1], c1) * g0[1]) * U(b_x, y, z, t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
-                            tmp1[c0] += (src(b_x, y, z, t, s1[0], c1) * g1[0] + src(b_x, y, z, t, s1[1], c1) * g1[1]) * U(b_x, y, z, t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
+                            tmp0[c0] += (src(b_x, y, z, t, s0[0], c1) * g0[0] + src(b_x, y, z, t, s0[1], c1) * g0[1]) * U(b_x, y, z, t, d, c1, c0).conj() * coef[1];
+                            // what ? Hermitian operator！
+                            tmp1[c0] += (src(b_x, y, z, t, s1[0], c1) * g1[0] + src(b_x, y, z, t, s1[1], c1) * g1[1]) * U(b_x, y, z, t, d, c1, c0).conj() * coef[1];
+                            // what ? Hermitian operator！
                         }
                         dest(x, y, z, t, 0, c0) += tmp0[c0];
                         dest(x, y, z, t, 1, c0) += tmp1[c0];
@@ -759,8 +759,10 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool t
                     {
                         for (int c1 = 0; c1 < U.lat_c1; c1++)
                         {
-                            tmp0[c0] += (src(x, b_y, z, t, s0[0], c1) * g0[0] + src(x, b_y, z, t, s0[1], c1) * g0[1]) * U(x, b_y, z, t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
-                            tmp1[c0] += (src(x, b_y, z, t, s1[0], c1) * g1[0] + src(x, b_y, z, t, s1[1], c1) * g1[1]) * U(x, b_y, z, t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
+                            tmp0[c0] += (src(x, b_y, z, t, s0[0], c1) * g0[0] + src(x, b_y, z, t, s0[1], c1) * g0[1]) * U(x, b_y, z, t, d, c1, c0).conj() * coef[1];
+                            // what ? Hermitian operator！
+                            tmp1[c0] += (src(x, b_y, z, t, s1[0], c1) * g1[0] + src(x, b_y, z, t, s1[1], c1) * g1[1]) * U(x, b_y, z, t, d, c1, c0).conj() * coef[1];
+                            // what ? Hermitian operator！
                         }
                         dest(x, y, z, t, 0, c0) += tmp0[c0];
                         dest(x, y, z, t, 1, c0) += tmp1[c0];
@@ -821,8 +823,10 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool t
                     {
                         for (int c1 = 0; c1 < U.lat_c1; c1++)
                         {
-                            tmp0[c0] += (src(x, y, b_z, t, s0[0], c1) * g0[0] + src(x, y, b_z, t, s0[1], c1) * g0[1]) * U(x, y, b_z, t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
-                            tmp1[c0] += (src(x, y, b_z, t, s1[0], c1) * g1[0] + src(x, y, b_z, t, s1[1], c1) * g1[1]) * U(x, y, b_z, t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
+                            tmp0[c0] += (src(x, y, b_z, t, s0[0], c1) * g0[0] + src(x, y, b_z, t, s0[1], c1) * g0[1]) * U(x, y, b_z, t, d, c1, c0).conj() * coef[1];
+                            // what ? Hermitian operator！
+                            tmp1[c0] += (src(x, y, b_z, t, s1[0], c1) * g1[0] + src(x, y, b_z, t, s1[1], c1) * g1[1]) * U(x, y, b_z, t, d, c1, c0).conj() * coef[1];
+                            // what ? Hermitian operator！
                         }
                         dest(x, y, z, t, 0, c0) += tmp0[c0];
                         dest(x, y, z, t, 1, c0) += tmp1[c0];
@@ -883,8 +887,10 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool t
                     {
                         for (int c1 = 0; c1 < U.lat_c1; c1++)
                         {
-                            tmp0[c0] += (src(x, y, z, b_t, s0[0], c1) * g0[0] + src(x, y, z, b_t, s0[1], c1) * g0[1]) * U(x, y, z, b_t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
-                            tmp1[c0] += (src(x, y, z, b_t, s1[0], c1) * g1[0] + src(x, y, z, b_t, s1[1], c1) * g1[1]) * U(x, y, z, b_t, d, c1, c0).conj() * coef[1];// what ? Hermitian operator！
+                            tmp0[c0] += (src(x, y, z, b_t, s0[0], c1) * g0[0] + src(x, y, z, b_t, s0[1], c1) * g0[1]) * U(x, y, z, b_t, d, c1, c0).conj() * coef[1];
+                            // what ? Hermitian operator！
+                            tmp1[c0] += (src(x, y, z, b_t, s1[0], c1) * g1[0] + src(x, y, z, b_t, s1[1], c1) * g1[1]) * U(x, y, z, b_t, d, c1, c0).conj() * coef[1];
+                            // what ? Hermitian operator！
                         }
                         dest(x, y, z, t, 0, c0) += tmp0[c0];
                         dest(x, y, z, t, 1, c0) += tmp1[c0];
@@ -930,7 +936,7 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest, const bool t
     std::cout << "######time cost:" << (double)(end - start) / CLOCKS_PER_SEC << std::endl;
     std::cout << "######dest.norm_2():" << dest.norm_2() << std::endl;
 }
-void cg(LatticeGauge &U,const LatticeFermi &b, LatticeFermi &x, const int &MAX_ITER, const double &TOL, const double &test)
+void cg(LatticeGauge &U, const LatticeFermi &b, LatticeFermi &x, const int &MAX_ITER, const double &TOL, const double &test)
 {
     Complex rho_prev(1.0, 0.0), rho(0.0, 0.0), alpha(1.0, 0.0), omega(1.0, 0.0), beta(0.0, 0.0);
     double r_norm2 = 0;
@@ -991,48 +997,103 @@ void cg(LatticeGauge &U,const LatticeFermi &b, LatticeFermi &x, const int &MAX_I
         rho_prev = rho;
     }
 }
-void ext_dslash(const double *U_real, const double *U_imag, const double *src_real, const double *src_imag, double *dest_real, double *dest_imag, const int &lat_x, const int &lat_y, const int &lat_z, const int &lat_t, const int &lat_s, const int &lat_c, const bool &test)
+// void ext_dslash(const double *U_real, const double *U_imag, const double *src_real, const double *src_imag, double *dest_real, double *dest_imag, const int &lat_x, const int &lat_y, const int &lat_z, const int &lat_t, const int &lat_s, const int &lat_c, const bool &test)
+// {
+//     LatticeGauge U(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
+//     LatticeFermi src(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
+//     LatticeFermi dest(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
+//     for (int i = 0; i < U.size; i++)
+//     {
+//         U[i].real = U_real[i];
+//         U[i].imag = U_imag[i];
+//     }
+//     for (int i = 0; i < src.size; i++)
+//     {
+//         src[i].real = src_real[i];
+//         src[i].imag = src_imag[i];
+//     }
+//     dslash(U, src, dest, test);
+//     for (int i = 0; i < dest.size; i++)
+//     {
+//         dest_real[i] = dest[i].real;
+//         dest_imag[i] = dest[i].imag;
+//     }
+// }
+// void ext_cg(const double *U_real, const double *U_imag, const double *b_real, const double *b_imag, double *x_real, double *x_imag, const int &lat_x, const int &lat_y, const int &lat_z, const int &lat_t, const int &lat_s, const int &lat_c, const int MAX_ITER, const double TOL, const bool &test)
+// {
+//     LatticeGauge U(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
+//     LatticeFermi b(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
+//     LatticeFermi x(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
+//     for (int i = 0; i < U.size; i++)
+//     {
+//         U[i].real = U_real[i];
+//         U[i].imag = U_imag[i];
+//     }
+//     for (int i = 0; i < b.size; i++)
+//     {
+//         b[i].real = b_real[i];
+//         b[i].imag = b_imag[i];
+//     }
+//     cg(U, b, x, MAX_ITER, TOL, test);
+//     for (int i = 0; i < x.size; i++)
+//     {
+//         x_real[i] = x[i].real;
+//         x_imag[i] = x[i].imag;
+//     }
+// }
+struct QcuParam
 {
-    LatticeGauge U(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
-    LatticeFermi src(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
-    LatticeFermi dest(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
-    for (int i = 0; i < U.size; i++)
-    {
-        U[i].data[0] = U_real[i];
-        U[i].data[1] = U_imag[i];
-    }
-    for (int i = 0; i < src.size; i++)
-    {
-        src[i].data[0] = src_real[i];
-        src[i].data[1] = src_imag[i];
-    }
-    dslash(U, src, dest, test);
-    for (int i = 0; i < dest.size; i++)
-    {
-        dest_real[i] = dest[i].data[0];
-        dest_imag[i] = dest[i].data[1];
-    }
-}
-void ext_cg(const double *U_real, const double *U_imag, const double *b_real, const double *b_imag, double *x_real, double *x_imag, const int &lat_x, const int &lat_y, const int &lat_z, const int &lat_t, const int &lat_s, const int &lat_c, const int MAX_ITER, const double TOL, const bool &test)
+    int lattice_size[4];
+} void dslashQcu(void *fermion_out, const void *fermion_in, const void *gauge, QcuParam *param)
 {
-    LatticeGauge U(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
-    LatticeFermi b(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
-    LatticeFermi x(lat_x, lat_y, lat_z, lat_t, lat_s, lat_c);
-    for (int i = 0; i < U.size; i++)
+    LatticeGauge U(*param.lattice_size[0], *param.lattice_size[1], *param.lattice_size[2], *param.lattice_size[3], 4, 3);
+    LatticeFermi b(*param.lattice_size[0], *param.lattice_size[1], *param.lattice_size[2], *param.lattice_size[3], 4, 3);
+    LatticeFermi x(*param.lattice_size[0], *param.lattice_size[1], *param.lattice_size[2], *param.lattice_size[3], 4, 3);
+    for (int x = 0; x < U.lat_x; x++)
     {
-        U[i].data[0] = U_real[i];
-        U[i].data[1] = U_imag[i];
+        for (int y = 0; y < U.lat_y; y++)
+        {
+            for (int z = 0; z < U.lat_z; z++)
+            {
+                for (int t = 0; t < U.lat_t; t++)
+                {
+                    for (int s = 0; s < U.lat_s; s++)
+                    {
+                        for (int c0 = 0; c < U.lat_c0; c++)
+                        {
+                            index = x * U.lat_y * U.lat_z * U.lat_t * U.lat_s * U.lat_c + y * U.lat_z * U.lat_t * U.lat_s * Nc + z * U.lat_t * U.lat_s * U.lat_c + t * U.lat_s * U.lat_c + s * U.lat_c + c0 p_real[index] = p[t, z, y, x, s, c0].real
+                                                                                                                                                                                                                                p_imag[index] = p[t, z, y, x, s, c0].imag for (int c1 = 0; c < U.lat_c1; c++)
+                            {
+                                index_U = x * U.lat_y * U.lat_z * U.lat_t * U.lat_s * U.lat_c * U.lat_c + y * U.lat_z * U.lat_t * U.lat_s * U.lat_c * U.lat_c +
+                                          z * U.lat_t * U.lat_s * U.lat_c * U.lat_c + t * U.lat_s * U.lat_c * U.lat_c + s * U.lat_c * U.lat_c + c0 * U.lat_c + c1 U_real[index_U] = U[s, t, z, y, x, c0, c1].real
+                                                                                                                                                                                        U_imag[index_U] = U[s, t, z, y, x, c0, c1].imag
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
-    for (int i = 0; i < b.size; i++)
+    dslash(U, src, dest, false);
+    for (int x = 0; x < U.lat_x; x++)
     {
-        b[i].data[0] = b_real[i];
-        b[i].data[1] = b_imag[i];
-    }
-    cg(U, b, x, MAX_ITER, TOL, test);
-    for (int i = 0; i < x.size; i++)
-    {
-        x_real[i] = x[i].data[0];
-        x_imag[i] = x[i].data[1];
+        for (int y = 0; y < U.lat_y; y++)
+        {
+            for (int z = 0; z < U.lat_z; z++)
+            {
+                for (int t = 0; t < U.lat_t; t++)
+                {
+                    for (int s = 0; s < U.lat_s; s++)
+                    {
+                        for (int c0 = 0; c < U.lat_c0; c++)
+                        {
+                            index = x * U.lat_y * U.lat_z * U.lat_t * U.lat_s * U.lat_c + y * U.lat_z * U.lat_t * U.lat_s * Nc + z * U.lat_t * U.lat_s * U.lat_c + t * U.lat_s * U.lat_c + s * U.lat_c + c0 _Mp[t, z, y, x, s, c0] = complex(
+                                        Mp_real[index], Mp_imag[index])
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 #endif

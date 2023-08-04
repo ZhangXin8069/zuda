@@ -1,4 +1,3 @@
-from lib import zuda_cpu
 import os
 import sys
 
@@ -9,8 +8,15 @@ import numpy as np
 
 from pyquda import init
 
+from lib import test_zuda_cpu
+
 os.environ["QUDA_RESOURCE_PATH"] = ".cache"
 init()
+
+Lx, Ly, Lz, Lt = 16, 16, 16, 32
+Nd, Ns, Nc = 4, 4, 3
+latt_size = [Lx, Ly, Lz, Lt]
+
 
 def applyDslash(Mp, p, U_seed):
     import cupy as cp
@@ -31,10 +37,8 @@ def applyDslash(Mp, p, U_seed):
     b = LatticeFermion(latt_size)
 
     # Dslash a = b
-    quda.dslashQuda(b.even_ptr, a.odd_ptr, dslash.invert_param,
-                    QudaParity.QUDA_EVEN_PARITY)
-    quda.dslashQuda(b.odd_ptr, a.even_ptr, dslash.invert_param,
-                    QudaParity.QUDA_ODD_PARITY)
+    quda.dslashQuda(b.even_ptr, a.odd_ptr, dslash.invert_param, QudaParity.QUDA_EVEN_PARITY)
+    quda.dslashQuda(b.odd_ptr, a.even_ptr, dslash.invert_param, QudaParity.QUDA_ODD_PARITY)
 
     # Save b to Mp
     Mp[:] = b.lexico()
@@ -43,84 +47,18 @@ def applyDslash(Mp, p, U_seed):
     return U.lexico()
 
 
-Lx, Ly, Lz, Lt = 16, 16, 16, 16
-Nd, Ns, Nc = 4, 4, 3
-latt_size = [Lx, Ly, Lz, Lt]
 p = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), np.complex128)
 p[0, 0, 0, 0, 0, 0] = 1
-for x in range(Lx):
-    for y in range(Ly):
-        for z in range(Lz):
-            for t in range(Lt):
-                for s in range(Ns):
-                    for c0 in range(Nc):
-                        p[t, z, y, x, s, c0] = complex(np.random.randn(),np.random.randn())
 Mp = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), np.complex128)
-_Mp = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), np.complex128)
-U = applyDslash(Mp, p, 5)
-size = Lx*Ly*Lz*Lt*Ns*Nc
-size_U = Lx*Ly*Lz*Lt*Ns*Nc*Nc
-U_real = np.zeros(size_U, np.double)
-U_imag = np.zeros(size_U, np.double)
-p_real = np.zeros(size, np.double)
-p_imag = np.zeros(size, np.double)
-Mp_real = np.zeros(size, np.double)
-Mp_imag = np.zeros(size, np.double)
-print(U.shape)
-print(Mp.shape)
-for x in range(Lx):
-    for y in range(Ly):
-        for z in range(Lz):
-            for t in range(Lt):
-                for s in range(Ns):
-                    for c0 in range(Nc):
-                        index = x * Ly * Lz * Lt * Ns * Nc + y * Lz * Lt * Ns * \
-                            Nc + z * Lt * Ns * Nc + t * Ns * Nc + s * Nc + c0
-                        p_real[index] = p[t, z, y, x, s, c0].real
-                        p_imag[index] = p[t, z, y, x, s, c0].imag
-                        for c1 in range(Nc):
-                            index_U = x * Ly * Lz * Lt * Ns * Nc * Nc + y * Lz * Lt * Ns * Nc * Nc + \
-                                z * Lt * Ns * Nc * Nc + t * Ns * Nc * Nc + s * Nc * Nc + c0 * Nc + c1
-                            U_real[index_U] = U[s, t, z, y, x,  c0, c1].real
-                            U_imag[index_U] = U[s, t, z, y, x,
-                                                c0, c1].imag  # what the fuck ?
-MAX_ITER = 1e6
-TOL = 1e-6
+
+U = applyDslash(Mp, p, 0)
+print(Mp[0, 0, 0, 1])
+
+Mp1 = np.zeros((Lt, Lz, Ly, Lx, Ns, Nc), np.complex128)
+param = test_zuda_cpu.QcuParam()
+param.lattice_size = latt_size
 print("############ZUDA############")
-zuda_cpu.dslash_py(U_real,
-               U_imag,
-               p_real,
-               p_imag,
-               Mp_real,
-               Mp_imag,
-               Lx,
-               Ly,
-               Lz,
-               Lt,
-               Ns,
-               Nc,
-               False)
-for x in range(Lx):
-    for y in range(Ly):
-        for z in range(Lz):
-            for t in range(Lt):
-                for s in range(Ns):
-                    for c0 in range(Nc):
-                        index = x * Ly * Lz * Lt * Ns * Nc + y * Lz * Lt * Ns * \
-                            Nc + z * Lt * Ns * Nc + t * Ns * Nc + s * Nc + c0
-                        _Mp[t, z, y, x, s, c0] = complex(
-                            Mp_real[index], Mp_imag[index])
+test_zuda_cpu.dslashQcu(Mp1, p, U, param)
+print(Mp[0, 0, 0, 1])
 
-
-# print("np.sum(Mp[0, 0, 0, 1])",np.sum(Mp[0, 0, 0, 1]))
-# print("np.sum(Mp)",np.sum(Mp))
-# print("np.sum(_Mp[0, 0, 0, 1])",np.sum(_Mp[0, 0, 0, 1]))
-# print("np.sum(_Mp)",np.sum(_Mp))
-reduce = Mp-_Mp
-print("###reduce:", reduce[0, 0, 0, 1])
-print("###np.linalg.norm(reduce):", np.linalg.norm(reduce))
-# print(np.sum(_Mp[0, 0, 0, 1]))
-# print(Mp[1, 0, 0, 1])
-# print(_Mp[1, 0, 0, 1])
-# print(Mp[0, 0, 0, 1])
-# print(_Mp[0, 0, 0, 1])
+print(np.linalg.norm(Mp - Mp1))
