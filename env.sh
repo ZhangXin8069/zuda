@@ -8,6 +8,8 @@ work_name="test"
 tmp_name="tmp"
 work_path=${_HOME}/${work_name}
 tmp_path=${_HOME}/${tmp_name}
+SM=70
+MAKEJ=24
 
 # source
 ## mkdir

@@ -1,12 +1,10 @@
-TARGET:=libqcu.so qcu_serial.o
+TARGET:=libqcu.so qcu_cpu.o
 LIB:=libqcu.so
-INCLUDE:=$(shell pwd)/../../pyquda/include/qcu
-OBJECTS:=qcu_serial.o
-SRC:=qcu_serial.cpp
-FLAGS:= -Ofast # -g
-INSTALL_DIR:=$(shell pwd)/../../lib
-
-
+INCLUDE:=${HOME}/external-libraries/pyquda/include/qcu
+OBJECTS:=qcu_cpu.o
+SRC:=qcu_cpu.cc
+FLAGS:= -O3 # -g
+INSTALL_DIR:=${_HOME}/lib
 
 ${LIB}: ${OBJECTS}
 	g++ -shared -o ${LIB} ${OBJECTS}
