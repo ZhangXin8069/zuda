@@ -1,3 +1,4 @@
+#include "qcu.h"
 #include <iostream>
 #include <random>
 #include <time.h>
@@ -160,7 +161,7 @@ public:
     //     index_z * this->lat_t * this->lat_s * this->lat_c +
     //     index_t * this->lat_s * this->lat_c + index_s * this->lat_c +
     //     index_c;
-    // [t, z, y, x, s, c0]
+    // (Lt, Lz, Ly, Lx, Ns, Nc)
     int index =
         index_t * this->lat_z * this->lat_y * this->lat_x * this->lat_s *
             this->lat_c +
@@ -172,12 +173,19 @@ public:
   Complex &operator()(const int &index_x, const int &index_y,
                       const int &index_z, const int &index_t,
                       const int &index_s, const int &index_c) {
+    // int index =
+    //     index_x * this->lat_y * this->lat_z * this->lat_t * this->lat_s *
+    //         this->lat_c +
+    //     index_y * this->lat_z * this->lat_t * this->lat_s * this->lat_c +
+    //     index_z * this->lat_t * this->lat_s * this->lat_c +
+    //     index_t * this->lat_s * this->lat_c + index_s * this->lat_c +
+    //     index_c;
     int index =
-        index_x * this->lat_y * this->lat_z * this->lat_t * this->lat_s *
+        index_t * this->lat_z * this->lat_y * this->lat_x * this->lat_s *
             this->lat_c +
-        index_y * this->lat_z * this->lat_t * this->lat_s * this->lat_c +
-        index_z * this->lat_t * this->lat_s * this->lat_c +
-        index_t * this->lat_s * this->lat_c + index_s * this->lat_c + index_c;
+        index_z * this->lat_y * this->lat_x * this->lat_s * this->lat_c +
+        index_y * this->lat_x * this->lat_s * this->lat_c +
+        index_x * this->lat_s * this->lat_c + index_s * this->lat_c + index_c;
     return this->lattice_vec[index];
   }
   LatticeFermi operator+(const LatticeFermi &other) const {
@@ -409,7 +417,8 @@ public:
     //     index_t * this->lat_s * this->lat_c0 * this->lat_c1 +
     //     index_s * this->lat_c0 * this->lat_c1 + index_c0 * this->lat_c1 +
     //     index_c1;
-    // [s, t, z, y, x, c0, c1]
+    // (Nd, Lt, Lz, Ly, Lx, Nc, Nc)
+
     int index =
         index_s * this->lat_t * this->lat_z * this->lat_y * this->lat_x *
             this->lat_c0 * this->lat_c1 +
@@ -425,14 +434,24 @@ public:
                       const int &index_z, const int &index_t,
                       const int &index_s, const int &index_c0,
                       const int &index_c1) {
+    // int index =
+    //     index_x * this->lat_y * this->lat_z * this->lat_t * this->lat_s *
+    //         this->lat_c0 * this->lat_c1 +
+    //     index_y * this->lat_z * this->lat_t * this->lat_s * this->lat_c0 *
+    //         this->lat_c1 +
+    //     index_z * this->lat_t * this->lat_s * this->lat_c0 * this->lat_c1 +
+    //     index_t * this->lat_s * this->lat_c0 * this->lat_c1 +
+    //     index_s * this->lat_c0 * this->lat_c1 +
+    //     index_c0 * this->lat_c1 +
+    //     index_c1;
     int index =
-        index_x * this->lat_y * this->lat_z * this->lat_t * this->lat_s *
+        index_s * this->lat_t * this->lat_z * this->lat_y * this->lat_x *
             this->lat_c0 * this->lat_c1 +
-        index_y * this->lat_z * this->lat_t * this->lat_s * this->lat_c0 *
+        index_t * this->lat_z * this->lat_y * this->lat_x * this->lat_c0 *
             this->lat_c1 +
-        index_z * this->lat_t * this->lat_s * this->lat_c0 * this->lat_c1 +
-        index_t * this->lat_s * this->lat_c0 * this->lat_c1 +
-        index_s * this->lat_c0 * this->lat_c1 + index_c0 * this->lat_c1 +
+        index_z * this->lat_y * this->lat_x * this->lat_c0 * this->lat_c1 +
+        index_y * this->lat_x * this->lat_c0 * this->lat_c1 +
+        index_x * this->lat_c0 * this->lat_c1 + index_c0 * this->lat_c1 +
         index_c1;
     return this->lattice_vec[index];
   }
@@ -573,6 +592,7 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest,
             const bool test) {
   std::cout << "######U.norm_2():" << U.norm_2() << std::endl;
   std::cout << "######src.norm_2():" << src.norm_2() << std::endl;
+  std::cout << "######dest.norm_2():" << dest.norm_2() << std::endl;
   if (test) {
     dslash_test(U, src, dest);
     return;
@@ -882,9 +902,9 @@ void dslash(LatticeGauge &U, LatticeFermi &src, LatticeFermi &dest,
     }
   }
   clock_t end = clock();
+  std::cout << "######dest.norm_2():" << dest.norm_2() << std::endl;
   std::cout << "######time cost:" << (double)(end - start) / CLOCKS_PER_SEC
             << std::endl;
-  std::cout << "######dest.norm_2():" << dest.norm_2() << std::endl;
 }
 void cg(LatticeGauge &U, const LatticeFermi &b, LatticeFermi &x,
         const int &MAX_ITER, const double &TOL, const double &test) {
@@ -1001,7 +1021,8 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
   LatticeGauge U(lat_x, lat_y, lat_z, lat_t, 4, 3);
   LatticeFermi src(lat_x, lat_y, lat_z, lat_t, 4, 3);
   LatticeFermi dest(lat_x, lat_y, lat_z, lat_t, 4, 3);
-  U.lattice_vec = gauge;
-  src.lattice_vec = fermion_in;
+  U.lattice_vec = (Complex *)gauge;
+  src.lattice_vec = (Complex *)fermion_in;
+  dest.lattice_vec = (Complex *)fermion_out;
   dslash(U, src, dest, false);
 }
