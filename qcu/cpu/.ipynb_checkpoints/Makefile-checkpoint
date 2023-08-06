@@ -4,7 +4,7 @@ INCLUDE:=${HOME}/external-libraries/pyquda/include/qcu
 OBJECTS:=qcu_cpu.o
 SRC:=qcu_cpu.cc
 FLAGS:= -O3 # -g
-INSTALL_DIR:=../../lib
+INSTALL_DIR:=${_HOME}/lib
 
 ${LIB}: ${OBJECTS}
 	g++ -shared -o ${LIB} ${OBJECTS}
