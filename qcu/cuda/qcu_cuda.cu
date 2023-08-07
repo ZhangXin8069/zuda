@@ -456,9 +456,9 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
       local_dest[c0 + 9] -= tmp1;
     }
   }
-  for (int i = 0; i < 12; i++) {
-    dest[i] = local_dest[i];
-  }
+  // for (int i = 0; i < 12; i++) {
+  //   dest[i] = local_dest[i];
+  // }
   // dest = local_dest;
   // memcpy(dest, local_dest, sizeof(local_dest));
 }
@@ -467,7 +467,7 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
                QcuParam *param) {
   int lat_x = param->lattice_size[0];
   int lat_y = param->lattice_size[1];
-  int lat_z = param->lattice_size[2];
+  int lat_z = param->lattice_size[2A];
   int lat_t = param->lattice_size[3];
   int lat_xcc = lat_x * 9;
   int lat_yxcc = lat_y * lat_xcc;

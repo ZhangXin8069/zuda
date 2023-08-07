@@ -456,9 +456,9 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
       local_dest[c0 + 9] -= tmp1;
     }
   }
-  for (int i = 0; i < 12; i++) {
-    dest[i] = local_dest[i];
-  }
+  // for (int i = 0; i < 12; i++) {
+  //   dest[i] = local_dest[i];
+  // }
   // dest = local_dest;
   // memcpy(dest, local_dest, sizeof(local_dest));
 }
