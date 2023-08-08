@@ -1,101 +1,1869 @@
-PATH:/home/aistudio/qcu
-~ ~/qcu
-~ ~ ~/qcu
-~ ~/qcu
-~/qcu
-~/qcu/cuda ~/qcu
-nvcc -shared -Xcompiler -fPIC -o libqcu.so qcu_cuda.cu -I/home/aistudio/external-libraries/pyquda/include/qcu -arch=sm_70 -O3 --maxrregcount=255  
-cp libqcu.so ../../lib/
-rm libqcu.so
-~/qcu
-~/external-libraries/PyQuda ~/qcu
-Looking in indexes: https://pypi.tuna.tsinghua.edu.cn/simple
-Processing /home/aistudio/external-libraries/PyQuda
-  Preparing metadata (setup.py): started
-  Preparing metadata (setup.py): finished with status 'error'
-~/qcu
-QUDA 1.1.0 (git 1.1.0--sm_70)
-CUDA Driver version = 11020
-CUDA Runtime version = 11060
-Graphic driver version = 460.32.03
-Found device 0: Tesla V100-SXM2-16GB
-Using device 0: Tesla V100-SXM2-16GB
-WARNING: Data reordering done on GPU (set with QUDA_REORDER_LOCATION=GPU/CPU)
-Loaded 17 sets of cached parameters from .cache/tunecache.tsv
-Loaded 17 sets of cached parameters from .cache/tunecache.tsv
-WARNING: Using device memory pool allocator
-WARNING: Using pinned memory pool allocator
-cublasCreated successfully
-Creating Gaussian distributed Lie group field with sigma = 1.000000e+00
-################
-parity:0
-lat_x:16
-lat_y:32
-lat_z:32
-lat_t:64
-################time cost without cudaMemcpy:1.5e-07s
-################
-parity:1
-lat_x:16
-lat_y:32
-lat_z:32
-lat_t:64
-################time cost without cudaMemcpy:9e-08s
-[[0.+0.j 0.+0.j 0.+0.j]
- [0.+0.j 0.+0.j 0.+0.j]
- [0.+0.j 0.+0.j 0.+0.j]
- [0.+0.j 0.+0.j 0.+0.j]]
-0.0
-[[-1.60796001-0.94514113j  2.04102148-1.8875026j   0.96843584-6.91270175j]
- [ 0.61240385-1.72864527j  2.32223447+1.6579993j   6.35613792+1.44724674j]
- [ 0.61240385-1.72864527j  2.32223447+1.6579993j   6.35613792+1.44724674j]
- [-2.06138254-0.73308911j  2.09273117-2.70525665j  0.89068291-5.87732702j]]
-41.78219141263364
-41.78219141263364
-WARNING: Environment variable QUDA_PROFILE_OUTPUT_BASE not set; writing to profile.tsv and profile_async.tsv
-Saving 17 sets of cached parameters to .cache/profile_0.tsv
-Saving 0 sets of cached profiles to .cache/profile_async_0.tsv
+qcu_cuda.cu(111): warning #177-D: variable "move" was declared but never referenced
 
-               initQuda Total time =     3.068 secs
-                     init     =     3.068 secs ( 99.995%),	 with        2 calls at 1.534e+06 us per call
-        total accounted       =     3.068 secs ( 99.995%)
-        total missing         =     0.000 secs (  0.005%)
+qcu_cuda.cu(112): warning #177-D: variable "local_lat_x" was declared but never referenced
 
-          loadGaugeQuda Total time =     0.072 secs
-                 download     =     0.053 secs ( 73.406%),	 with        2 calls at 2.632e+04 us per call
-                   upload     =     0.008 secs ( 11.840%),	 with        1 calls at 8.491e+03 us per call
-                     init     =     0.004 secs (  5.419%),	 with        2 calls at 1.943e+03 us per call
-                  compute     =     0.007 secs (  9.251%),	 with        2 calls at 3.317e+03 us per call
-                     free     =     0.000 secs (  0.022%),	 with        2 calls at 8.000e+00 us per call
-        total accounted       =     0.072 secs ( 99.939%)
-        total missing         =     0.000 secs (  0.061%)
+qcu_cuda.cu(113): warning #177-D: variable "local_lat_y" was declared but never referenced
 
-             dslashQuda Total time =     0.093 secs
-                 download     =     0.001 secs (  0.680%),	 with        2 calls at 3.175e+02 us per call
-                   upload     =     0.000 secs (  0.041%),	 with        2 calls at 1.900e+01 us per call
-                     init     =     0.000 secs (  0.131%),	 with        2 calls at 6.100e+01 us per call
-                  compute     =     0.093 secs ( 99.127%),	 with        2 calls at 4.630e+04 us per call
-                     free     =     0.000 secs (  0.010%),	 with        2 calls at 4.500e+00 us per call
-        total accounted       =     0.093 secs ( 99.988%)
-        total missing         =     0.000 secs (  0.012%)
+qcu_cuda.cu(114): warning #177-D: variable "local_lat_z" was declared but never referenced
 
-                endQuda Total time =     0.109 secs
+qcu_cuda.cu(115): warning #177-D: variable "local_lat_t" was declared but never referenced
 
-       initQuda-endQuda Total time =     7.281 secs
+qcu_cuda.cu(125): warning #177-D: variable "origin_U" was declared but never referenced
 
-                   QUDA Total time =     3.384 secs
-                 download     =     0.053 secs (  1.575%),	 with        4 calls at 1.332e+04 us per call
-                   upload     =     0.009 secs (  0.252%),	 with        3 calls at 2.843e+03 us per call
-                     init     =     3.072 secs ( 90.787%),	 with        6 calls at 5.120e+05 us per call
-                  compute     =     0.141 secs (  4.172%),	 with        5 calls at 2.823e+04 us per call
-                     free     =     0.000 secs (  0.001%),	 with        4 calls at 6.000e+00 us per call
-        total accounted       =     3.275 secs ( 96.786%)
-        total missing         =     0.109 secs (  3.214%)
+qcu_cuda.cu(129): warning #177-D: variable "origin_src" was declared but never referenced
 
-Device memory used = 2743.5 MiB
-Pinned device memory used = 0.0 MiB
-Managed memory used = 0.0 MiB
-Shmem memory used = 0.0 MiB
-Page-locked host memory used = 84.0 MiB
-Total host memory used >= 115.5 MiB
+qcu_cuda.cu(135): warning #177-D: variable "tmp_U" was declared but never referenced
 
+qcu_cuda.cu(136): warning #177-D: variable "tmp_src" was declared but never referenced
+
+qcu_cuda.cu(445): warning #177-D: variable "lat_tzyxcc" was declared but never referenced
+
+qcu_cuda.cu(448): warning #177-D: variable "lat_zyxsc" was declared but never referenced
+
+  error: subprocess-exited-with-error
+  
+  × python setup.py egg_info did not run successfully.
+  │ exit code: 1
+  ╰─> [1832 lines of output]
+      Compiling pyquda/src/pyquda.pyx because it changed.
+      [1/1] Cythonizing pyquda/src/pyquda.pyx
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      import numpy
+      cimport numpy
+      
+      cdef class Pointer:
+          cdef void *ptr
+          dtype: str
+          ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pointer.pxd:10:4: Executable statement not allowed here
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      import cython
+      
+      from libc.stdio cimport stdout
+      
+      cimport quda
+      from pointer cimport Pointer, Pointers, Pointerss
+      ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:13:0: 'pointer/Pointer.pxd' not found
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      import cython
+      
+      from libc.stdio cimport stdout
+      
+      cimport quda
+      from pointer cimport Pointer, Pointers, Pointerss
+      ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:13:0: 'pointer/Pointers.pxd' not found
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      import cython
+      
+      from libc.stdio cimport stdout
+      
+      cimport quda
+      from pointer cimport Pointer, Pointers, Pointerss
+      ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:13:0: 'pointer/Pointerss.pxd' not found
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+          @preconditioner.setter
+          def preconditioner(self, value):
+              self.set_preconditioner(value)
+      
+          cdef set_preconditioner(self, Pointer value):
+                                        ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:1164:34: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+          @deflation_op.setter
+          def deflation_op(self, value):
+              self.set_deflation_op(value)
+      
+          cdef set_deflation_op(self, Pointer value):
+                                      ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:1178:32: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+          @eig_param.setter
+          def eig_param(self, value):
+              self.set_eig_param(value)
+      
+          cdef set_eig_param(self, Pointer value):
+                                   ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:1192:29: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+          @preserve_deflation_space.setter
+          def preserve_deflation_space(self, value):
+              self.set_preserve_deflation_space(value)
+      
+          cdef set_preserve_deflation_space(self, Pointer value):
+                                                  ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2229:44: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+          @traces.setter
+          def traces(self, value):
+              self.set_traces(value)
+      
+          cdef set_traces(self, Pointer value):
+                                ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2611:26: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+          @input_path_buff.setter
+          def input_path_buff(self, value):
+              self.set_input_path_buff(value)
+      
+          cdef set_input_path_buff(self, Pointers value):
+                                         ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2625:35: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+          @path_length.setter
+          def path_length(self, value):
+              self.set_path_length(value)
+      
+          cdef set_path_length(self, Pointer value):
+                                     ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2639:31: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+          @loop_coeff.setter
+          def loop_coeff(self, value):
+              self.set_loop_coeff(value)
+      
+          cdef set_loop_coeff(self, Pointer value):
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2653:30: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+          @qcharge_density.setter
+          def qcharge_density(self, value):
+              self.set_qcharge_density(value)
+      
+          cdef set_qcharge_density(self, Pointer value):
+                                         ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2723:35: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.endQuda()
+      
+      def updateR():
+          quda.updateR()
+      
+      def loadGaugeQuda(Pointers h_gauge, QudaGaugeParam param):
+                        ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3024:18: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.loadGaugeQuda(h_gauge.ptr, &param.param)
+      
+      def freeGaugeQuda():
+          quda.freeGaugeQuda()
+      
+      def saveGaugeQuda(Pointers h_gauge, QudaGaugeParam param):
+                        ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3031:18: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def saveGaugeQuda(Pointers h_gauge, QudaGaugeParam param):
+          assert h_gauge.dtype == "void"
+          quda.saveGaugeQuda(h_gauge.ptr, &param.param)
+      
+      def loadCloverQuda(Pointer h_clover, Pointer h_clovinv, QudaInvertParam inv_param):
+                         ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3035:19: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def saveGaugeQuda(Pointers h_gauge, QudaGaugeParam param):
+          assert h_gauge.dtype == "void"
+          quda.saveGaugeQuda(h_gauge.ptr, &param.param)
+      
+      def loadCloverQuda(Pointer h_clover, Pointer h_clovinv, QudaInvertParam inv_param):
+                                           ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3035:37: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.freeCloverQuda()
+      
+      # def lanczosQuda(int k0, int m, Pointer hp_Apsi, Pointer hp_r, Pointer hp_V, Pointer hp_alpha, Pointer hp_beta, QudaEigParam eig_param)
+      # def eigensolveQuda(Pointers h_evecs, Pointer<double_complex> h_evals, QudaEigParam param)
+      
+      def invertQuda(Pointer h_x, Pointer h_b, QudaInvertParam param):
+                     ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3046:15: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.freeCloverQuda()
+      
+      # def lanczosQuda(int k0, int m, Pointer hp_Apsi, Pointer hp_r, Pointer hp_V, Pointer hp_alpha, Pointer hp_beta, QudaEigParam eig_param)
+      # def eigensolveQuda(Pointers h_evecs, Pointer<double_complex> h_evals, QudaEigParam param)
+      
+      def invertQuda(Pointer h_x, Pointer h_b, QudaInvertParam param):
+                                  ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3046:28: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      # def invertMultiSrcQuda(Pointers _hp_x, Pointers _hp_b, QudaInvertParam param, Pointer h_gauge, QudaGaugeParam gauge_param)
+      # def invertMultiSrcStaggeredQuda(Pointers _hp_x, Pointers _hp_b, QudaInvertParam param, Pointer milc_fatlinks, Pointer milc_longlinks, QudaGaugeParam gauge_param)
+      # def invertMultiSrcCloverQuda(Pointers _hp_x, Pointers _hp_b, QudaInvertParam param, Pointer h_gauge, QudaGaugeParam gauge_param, Pointer h_clover, Pointer h_clovinv)
+      
+      def invertMultiShiftQuda(Pointers _hp_x, Pointer _hp_b, QudaInvertParam param):
+                               ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3055:25: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      # def invertMultiSrcQuda(Pointers _hp_x, Pointers _hp_b, QudaInvertParam param, Pointer h_gauge, QudaGaugeParam gauge_param)
+      # def invertMultiSrcStaggeredQuda(Pointers _hp_x, Pointers _hp_b, QudaInvertParam param, Pointer milc_fatlinks, Pointer milc_longlinks, QudaGaugeParam gauge_param)
+      # def invertMultiSrcCloverQuda(Pointers _hp_x, Pointers _hp_b, QudaInvertParam param, Pointer h_gauge, QudaGaugeParam gauge_param, Pointer h_clover, Pointer h_clovinv)
+      
+      def invertMultiShiftQuda(Pointers _hp_x, Pointer _hp_b, QudaInvertParam param):
+                                               ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3055:41: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          mg_instance = Pointer("void")
+          cdef void *ptr = quda.newMultigridQuda(&param.param)
+          mg_instance.set_ptr(ptr)
+          return mg_instance
+      
+      def destroyMultigridQuda(Pointer mg_instance):
+                               ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3066:25: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          return mg_instance
+      
+      def destroyMultigridQuda(Pointer mg_instance):
+          quda.destroyMultigridQuda(mg_instance.ptr)
+      
+      def updateMultigridQuda(Pointer mg_instance, QudaMultigridParam param):
+                              ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3069:24: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.destroyMultigridQuda(mg_instance.ptr)
+      
+      def updateMultigridQuda(Pointer mg_instance, QudaMultigridParam param):
+          quda.updateMultigridQuda(mg_instance.ptr, &param.param)
+      
+      def dumpMultigridQuda(Pointer mg_instance, QudaMultigridParam param):
+                            ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3072:22: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.updateMultigridQuda(mg_instance.ptr, &param.param)
+      
+      def dumpMultigridQuda(Pointer mg_instance, QudaMultigridParam param):
+          quda.dumpMultigridQuda(mg_instance.ptr, &param.param)
+      
+      def dslashQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param, quda.QudaParity parity):
+                     ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3075:15: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.updateMultigridQuda(mg_instance.ptr, &param.param)
+      
+      def dumpMultigridQuda(Pointer mg_instance, QudaMultigridParam param):
+          quda.dumpMultigridQuda(mg_instance.ptr, &param.param)
+      
+      def dslashQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param, quda.QudaParity parity):
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3075:30: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      # def dslashMultiSrcQuda(Pointers _hp_x, Pointers _hp_b, QudaInvertParam param, QudaParity parity, Pointer h_gauge, QudaGaugeParam gauge_param)
+      # def dslashMultiSrcStaggeredQuda(Pointers _hp_x, Pointers _hp_b, QudaInvertParam param, QudaParity parity, Pointers milc_fatlinks, Pointers milc_longlinks, QudaGaugeParam gauge_param)
+      # def dslashMultiSrcCloverQuda(Pointers_hp_x, Pointers_hp_b, QudaInvertParam param, QudaParity parity, Pointer h_gauge, QudaGaugeParam gauge_param, Pointer h_clover, Pointer h_clovinv)
+      
+      def cloverQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param, quda.QudaParity parity, int inverse):
+                     ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3084:15: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      # def dslashMultiSrcQuda(Pointers _hp_x, Pointers _hp_b, QudaInvertParam param, QudaParity parity, Pointer h_gauge, QudaGaugeParam gauge_param)
+      # def dslashMultiSrcStaggeredQuda(Pointers _hp_x, Pointers _hp_b, QudaInvertParam param, QudaParity parity, Pointers milc_fatlinks, Pointers milc_longlinks, QudaGaugeParam gauge_param)
+      # def dslashMultiSrcCloverQuda(Pointers_hp_x, Pointers_hp_b, QudaInvertParam param, QudaParity parity, Pointer h_gauge, QudaGaugeParam gauge_param, Pointer h_clover, Pointer h_clovinv)
+      
+      def cloverQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param, quda.QudaParity parity, int inverse):
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3084:30: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def cloverQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param, quda.QudaParity parity, int inverse):
+          assert h_out.dtype == "void"
+          assert h_in.dtype == "void"
+          quda.cloverQuda(h_out.ptr, h_in.ptr, &inv_param.param, parity, inverse)
+      
+      def MatQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param):
+                  ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3089:12: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def cloverQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param, quda.QudaParity parity, int inverse):
+          assert h_out.dtype == "void"
+          assert h_in.dtype == "void"
+          quda.cloverQuda(h_out.ptr, h_in.ptr, &inv_param.param, parity, inverse)
+      
+      def MatQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param):
+                                 ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3089:27: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def MatQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param):
+          assert h_out.dtype == "void"
+          assert h_in.dtype == "void"
+          quda.MatQuda(h_out.ptr, h_in.ptr, &inv_param.param)
+      
+      def MatDagMatQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param):
+                        ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3094:18: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def MatQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param):
+          assert h_out.dtype == "void"
+          assert h_in.dtype == "void"
+          quda.MatQuda(h_out.ptr, h_in.ptr, &inv_param.param)
+      
+      def MatDagMatQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param):
+                                       ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3094:33: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      # void set_dim(int *)
+      # void pack_ghost(void **cpuLink, void **cpuGhost, int nFace, QudaPrecision precision)
+      # void computeKSLinkQuda(void* fatlink, void* longlink, void* ulink, void* inlink, double *path_coeff, QudaGaugeParam *param)
+      
+      def momResidentQuda(Pointers mom, QudaGaugeParam param):
+                          ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3103:20: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def momResidentQuda(Pointers mom, QudaGaugeParam param):
+          assert mom.dtype == "void"
+          quda.momResidentQuda(mom.ptr, &param.param)
+      
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+                                ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3107:26: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def momResidentQuda(Pointers mom, QudaGaugeParam param):
+          assert mom.dtype == "void"
+          quda.momResidentQuda(mom.ptr, &param.param)
+      
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+                                              ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3107:40: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def momResidentQuda(Pointers mom, QudaGaugeParam param):
+          assert mom.dtype == "void"
+          quda.momResidentQuda(mom.ptr, &param.param)
+      
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+                                                                 ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3107:59: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def momResidentQuda(Pointers mom, QudaGaugeParam param):
+          assert mom.dtype == "void"
+          quda.momResidentQuda(mom.ptr, &param.param)
+      
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+                                                                                         ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3107:83: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def momResidentQuda(Pointers mom, QudaGaugeParam param):
+          assert mom.dtype == "void"
+          quda.momResidentQuda(mom.ptr, &param.param)
+      
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+                                                                                                              ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3107:104: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert mom.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+      
+      def computeGaugePathQuda(Pointers out, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+                               ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3112:25: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert mom.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+      
+      def computeGaugePathQuda(Pointers out, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+                                             ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3112:39: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert mom.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+      
+      def computeGaugePathQuda(Pointers out, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+                                                                ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3112:58: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert mom.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+      
+      def computeGaugePathQuda(Pointers out, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+                                                                                        ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3112:82: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert mom.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+      
+      def computeGaugePathQuda(Pointers out, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+                                                                                                             ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3112:103: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def computeGaugePathQuda(Pointers out, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert out.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugePathQuda(out.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+      
+      def computeGaugeLoopTraceQuda(Pointer traces, Pointers input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double factor):
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3117:30: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def computeGaugePathQuda(Pointers out, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert out.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugePathQuda(out.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+      
+      def computeGaugeLoopTraceQuda(Pointer traces, Pointers input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double factor):
+                                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3117:46: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def computeGaugePathQuda(Pointers out, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert out.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugePathQuda(out.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+      
+      def computeGaugeLoopTraceQuda(Pointer traces, Pointers input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double factor):
+                                                                             ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3117:71: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def computeGaugePathQuda(Pointers out, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert out.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugePathQuda(out.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+      
+      def computeGaugeLoopTraceQuda(Pointer traces, Pointers input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double factor):
+                                                                                                  ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3117:92: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          assert path_length.dtype == "int"
+          assert loop_coeff.dtype == "double"
+          quda.computeGaugeLoopTraceQuda(<double complex *>traces.ptr, <int **>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, factor)
+      
+      
+      def updateGaugeFieldQuda(Pointers gauge, Pointers momentum, double dt, int conj_mom, int exact, QudaGaugeParam param):
+                               ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3125:25: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          assert path_length.dtype == "int"
+          assert loop_coeff.dtype == "double"
+          quda.computeGaugeLoopTraceQuda(<double complex *>traces.ptr, <int **>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, factor)
+      
+      
+      def updateGaugeFieldQuda(Pointers gauge, Pointers momentum, double dt, int conj_mom, int exact, QudaGaugeParam param):
+                                               ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3125:41: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          assert momentum.dtype == "void"
+          quda.updateGaugeFieldQuda(gauge.ptr, momentum.ptr, dt, conj_mom, exact, &param.param)
+      
+      # void staggeredPhaseQuda(void *gauge_h, QudaGaugeParam *param)
+      
+      def projectSU3Quda(Pointers gauge_h, double tol, QudaGaugeParam param):
+                         ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3132:19: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def projectSU3Quda(Pointers gauge_h, double tol, QudaGaugeParam param):
+          assert gauge_h.dtype == "void"
+          quda.projectSU3Quda(gauge_h.ptr, tol, &param.param)
+      
+      def momActionQuda(Pointers momentum, QudaGaugeParam param):
+                        ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3136:18: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      # void destroyGaugeFieldQuda(void* gauge)
+      
+      def createCloverQuda(QudaInvertParam param):
+          quda.createCloverQuda(&param.param)
+      
+      def computeCloverForceQuda(Pointers mom, double dt, Pointers x, Pointers p, Pointer coeff, double kappa2, double ck, int nvector, double multiplicity, Pointers gauge, QudaGaugeParam gauge_param, QudaInvertParam inv_param):
+                                 ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3147:27: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      # void destroyGaugeFieldQuda(void* gauge)
+      
+      def createCloverQuda(QudaInvertParam param):
+          quda.createCloverQuda(&param.param)
+      
+      def computeCloverForceQuda(Pointers mom, double dt, Pointers x, Pointers p, Pointer coeff, double kappa2, double ck, int nvector, double multiplicity, Pointers gauge, QudaGaugeParam gauge_param, QudaInvertParam inv_param):
+                                                          ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3147:52: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      # void destroyGaugeFieldQuda(void* gauge)
+      
+      def createCloverQuda(QudaInvertParam param):
+          quda.createCloverQuda(&param.param)
+      
+      def computeCloverForceQuda(Pointers mom, double dt, Pointers x, Pointers p, Pointer coeff, double kappa2, double ck, int nvector, double multiplicity, Pointers gauge, QudaGaugeParam gauge_param, QudaInvertParam inv_param):
+                                                                      ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3147:64: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      # void destroyGaugeFieldQuda(void* gauge)
+      
+      def createCloverQuda(QudaInvertParam param):
+          quda.createCloverQuda(&param.param)
+      
+      def computeCloverForceQuda(Pointers mom, double dt, Pointers x, Pointers p, Pointer coeff, double kappa2, double ck, int nvector, double multiplicity, Pointers gauge, QudaGaugeParam gauge_param, QudaInvertParam inv_param):
+                                                                                  ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3147:76: 'Pointer' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      # void destroyGaugeFieldQuda(void* gauge)
+      
+      def createCloverQuda(QudaInvertParam param):
+          quda.createCloverQuda(&param.param)
+      
+      def computeCloverForceQuda(Pointers mom, double dt, Pointers x, Pointers p, Pointer coeff, double kappa2, double ck, int nvector, double multiplicity, Pointers gauge, QudaGaugeParam gauge_param, QudaInvertParam inv_param):
+                                                                                                                                                             ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3147:151: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.gaugeObservablesQuda(&param.param)
+      
+      # void contractQuda(const void *x, const void *y, void *result, const QudaContractType cType, QudaInvertParam *param,
+      #                     const int *X)
+      
+      def computeGaugeFixingOVRQuda(Pointers gauge, unsigned int gauge_dir, unsigned int Nsteps, unsigned int verbose_interval, double relax_boost, double tolerance, unsigned int reunit_interval, unsigned int stopWtheta, QudaGaugeParam param, list timeinfo):
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3187:30: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          ret = quda.computeGaugeFixingOVRQuda(gauge.ptr, gauge_dir, Nsteps, verbose_interval, relax_boost, tolerance, reunit_interval, stopWtheta, &param.param, c_timeinfo)
+          for i in range(3):
+              timeinfo[i] = c_timeinfo[i]
+          return ret
+      
+      def computeGaugeFixingFFTQuda(Pointers gauge, unsigned int gauge_dir, unsigned int Nsteps, unsigned int verbose_interval, double alpha, unsigned int autotune, double tolerance, unsigned int stopWtheta, QudaGaugeParam param, list timeinfo):
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3196:30: 'Pointers' is not a type identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          def inv_type_precondition(self, value):
+              self.param.inv_type_precondition = value
+      
+          @property
+          def preconditioner(self):
+              ptr = Pointer("void")
+                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:1156:14: 'Pointer' is not a constant, variable or function identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+              self.param.inv_type_precondition = value
+      
+          @property
+          def preconditioner(self):
+              ptr = Pointer("void")
+              ptr.set_ptr(self.param.preconditioner)
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:1157:30: Cannot convert 'void *' to Python object
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          def preconditioner(self, value):
+              self.set_preconditioner(value)
+      
+          cdef set_preconditioner(self, Pointer value):
+              assert value.dtype == "void"
+              self.param.preconditioner = value.ptr
+                                               ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:1166:41: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+              assert value.dtype == "void"
+              self.param.preconditioner = value.ptr
+      
+          @property
+          def deflation_op(self):
+              ptr = Pointer("void")
+                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:1170:14: 'Pointer' is not a constant, variable or function identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+              self.param.preconditioner = value.ptr
+      
+          @property
+          def deflation_op(self):
+              ptr = Pointer("void")
+              ptr.set_ptr(self.param.deflation_op)
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:1171:30: Cannot convert 'void *' to Python object
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          def deflation_op(self, value):
+              self.set_deflation_op(value)
+      
+          cdef set_deflation_op(self, Pointer value):
+              assert value.dtype == "void"
+              self.param.deflation_op = value.ptr
+                                             ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:1180:39: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+              assert value.dtype == "void"
+              self.param.deflation_op = value.ptr
+      
+          @property
+          def eig_param(self):
+              ptr = Pointer("void")
+                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:1184:14: 'Pointer' is not a constant, variable or function identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+              self.param.deflation_op = value.ptr
+      
+          @property
+          def eig_param(self):
+              ptr = Pointer("void")
+              ptr.set_ptr(self.param.eig_param)
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:1185:30: Cannot convert 'void *' to Python object
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          def eig_param(self, value):
+              self.set_eig_param(value)
+      
+          cdef set_eig_param(self, Pointer value):
+              assert value.dtype == "void"
+              self.param.eig_param = value.ptr
+                                          ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:1194:36: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          def preserve_deflation(self, value):
+              self.param.preserve_deflation = value
+      
+          @property
+          def preserve_deflation_space(self):
+              ptr = Pointer("void")
+                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2221:14: 'Pointer' is not a constant, variable or function identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+              self.param.preserve_deflation = value
+      
+          @property
+          def preserve_deflation_space(self):
+              ptr = Pointer("void")
+              ptr.set_ptr(self.param.preserve_deflation_space)
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2222:30: Cannot convert 'void *' to Python object
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          def preserve_deflation_space(self, value):
+              self.set_preserve_deflation_space(value)
+      
+          cdef set_preserve_deflation_space(self, Pointer value):
+              assert value.dtype == "void"
+              self.param.preserve_deflation_space = value.ptr
+                                                         ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2231:51: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          def compute_gauge_loop_trace(self, value):
+              self.param.compute_gauge_loop_trace = value
+      
+          @property
+          def traces(self):
+              ptr = Pointer("double_complex")
+                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2603:14: 'Pointer' is not a constant, variable or function identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+              self.param.compute_gauge_loop_trace = value
+      
+          @property
+          def traces(self):
+              ptr = Pointer("double_complex")
+              ptr.set_ptr(self.param.traces)
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2604:30: Cannot convert 'double complex *' to Python object
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          def traces(self, value):
+              self.set_traces(value)
+      
+          cdef set_traces(self, Pointer value):
+              assert value.dtype == "double_complex"
+              self.param.traces = <double complex *>value.ptr
+                                  ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2613:28: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+              assert value.dtype == "double_complex"
+              self.param.traces = <double complex *>value.ptr
+      
+          @property
+          def input_path_buff(self):
+              ptr = Pointers("int", self.param.num_paths)
+                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2617:14: 'Pointers' is not a constant, variable or function identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+              self.param.traces = <double complex *>value.ptr
+      
+          @property
+          def input_path_buff(self):
+              ptr = Pointers("int", self.param.num_paths)
+              ptr.set_ptrs(<void **>self.param.input_path_buff)
+                           ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2618:21: Cannot convert 'void **' to Python object
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          def input_path_buff(self, value):
+              self.set_input_path_buff(value)
+      
+          cdef set_input_path_buff(self, Pointers value):
+              assert value.dtype == "int"
+              self.param.input_path_buff = <int **>value.ptrs
+                                           ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2627:37: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+              assert value.dtype == "int"
+              self.param.input_path_buff = <int **>value.ptrs
+      
+          @property
+          def path_length(self):
+              ptr = Pointer("int")
+                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2631:14: 'Pointer' is not a constant, variable or function identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+              self.param.input_path_buff = <int **>value.ptrs
+      
+          @property
+          def path_length(self):
+              ptr = Pointer("int")
+              ptr.set_ptr(self.param.path_length)
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2632:30: Cannot convert 'int *' to Python object
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          def path_length(self, value):
+              self.set_path_length(value)
+      
+          cdef set_path_length(self, Pointer value):
+              assert value.dtype == "int"
+              self.param.path_length = <int *>value.ptr
+                                       ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2641:33: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+              assert value.dtype == "int"
+              self.param.path_length = <int *>value.ptr
+      
+          @property
+          def loop_coeff(self):
+              ptr = Pointer("double")
+                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2645:14: 'Pointer' is not a constant, variable or function identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+              self.param.path_length = <int *>value.ptr
+      
+          @property
+          def loop_coeff(self):
+              ptr = Pointer("double")
+              ptr.set_ptr(self.param.loop_coeff)
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2646:30: Cannot convert 'double *' to Python object
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          def loop_coeff(self, value):
+              self.set_loop_coeff(value)
+      
+          cdef set_loop_coeff(self, Pointer value):
+              assert value.dtype == "double"
+              self.param.loop_coeff = <double *>value.ptr
+                                      ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2655:32: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          def compute_qcharge_density(self, value):
+              self.param.compute_qcharge_density = value
+      
+          @property
+          def qcharge_density(self):
+              ptr = Pointer("void")
+                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2715:14: 'Pointer' is not a constant, variable or function identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+              self.param.compute_qcharge_density = value
+      
+          @property
+          def qcharge_density(self):
+              ptr = Pointer("void")
+              ptr.set_ptr(self.param.qcharge_density)
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2716:30: Cannot convert 'void *' to Python object
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          def qcharge_density(self, value):
+              self.set_qcharge_density(value)
+      
+          cdef set_qcharge_density(self, Pointer value):
+              assert value.dtype == "void"
+              self.param.qcharge_density = value.ptr
+                                                ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:2725:42: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def updateR():
+          quda.updateR()
+      
+      def loadGaugeQuda(Pointers h_gauge, QudaGaugeParam param):
+          assert h_gauge.dtype == "void"
+          quda.loadGaugeQuda(h_gauge.ptr, &param.param)
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3026:30: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def freeGaugeQuda():
+          quda.freeGaugeQuda()
+      
+      def saveGaugeQuda(Pointers h_gauge, QudaGaugeParam param):
+          assert h_gauge.dtype == "void"
+          quda.saveGaugeQuda(h_gauge.ptr, &param.param)
+                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3033:30: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.saveGaugeQuda(h_gauge.ptr, &param.param)
+      
+      def loadCloverQuda(Pointer h_clover, Pointer h_clovinv, QudaInvertParam inv_param):
+          assert h_clover.dtype == "void"
+          assert h_clovinv.dtype == "void"
+          quda.loadCloverQuda(h_clover.ptr, h_clovinv.ptr, &inv_param.param)
+                                      ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3038:32: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.saveGaugeQuda(h_gauge.ptr, &param.param)
+      
+      def loadCloverQuda(Pointer h_clover, Pointer h_clovinv, QudaInvertParam inv_param):
+          assert h_clover.dtype == "void"
+          assert h_clovinv.dtype == "void"
+          quda.loadCloverQuda(h_clover.ptr, h_clovinv.ptr, &inv_param.param)
+                                                     ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3038:47: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      # def eigensolveQuda(Pointers h_evecs, Pointer<double_complex> h_evals, QudaEigParam param)
+      
+      def invertQuda(Pointer h_x, Pointer h_b, QudaInvertParam param):
+          assert h_x.dtype == "void"
+          assert h_b.dtype == "void"
+          quda.invertQuda(h_x.ptr, h_b.ptr, &param.param)
+                             ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3049:23: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      # def eigensolveQuda(Pointers h_evecs, Pointer<double_complex> h_evals, QudaEigParam param)
+      
+      def invertQuda(Pointer h_x, Pointer h_b, QudaInvertParam param):
+          assert h_x.dtype == "void"
+          assert h_b.dtype == "void"
+          quda.invertQuda(h_x.ptr, h_b.ptr, &param.param)
+                                      ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3049:32: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      # def invertMultiSrcCloverQuda(Pointers _hp_x, Pointers _hp_b, QudaInvertParam param, Pointer h_gauge, QudaGaugeParam gauge_param, Pointer h_clover, Pointer h_clovinv)
+      
+      def invertMultiShiftQuda(Pointers _hp_x, Pointer _hp_b, QudaInvertParam param):
+          assert _hp_x.dtype == "void"
+          assert _hp_b.dtype == "void"
+          quda.invertMultiShiftQuda(_hp_x.ptrs, _hp_b.ptr, &param.param)
+                                         ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3058:35: Cannot convert Python object to 'void **'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      # def invertMultiSrcCloverQuda(Pointers _hp_x, Pointers _hp_b, QudaInvertParam param, Pointer h_gauge, QudaGaugeParam gauge_param, Pointer h_clover, Pointer h_clovinv)
+      
+      def invertMultiShiftQuda(Pointers _hp_x, Pointer _hp_b, QudaInvertParam param):
+          assert _hp_x.dtype == "void"
+          assert _hp_b.dtype == "void"
+          quda.invertMultiShiftQuda(_hp_x.ptrs, _hp_b.ptr, &param.param)
+                                                     ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3058:47: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          assert _hp_x.dtype == "void"
+          assert _hp_b.dtype == "void"
+          quda.invertMultiShiftQuda(_hp_x.ptrs, _hp_b.ptr, &param.param)
+      
+      def newMultigridQuda(QudaMultigridParam param) -> Pointer:
+          mg_instance = Pointer("void")
+                        ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3061:18: 'Pointer' is not a constant, variable or function identifier
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.invertMultiShiftQuda(_hp_x.ptrs, _hp_b.ptr, &param.param)
+      
+      def newMultigridQuda(QudaMultigridParam param) -> Pointer:
+          mg_instance = Pointer("void")
+          cdef void *ptr = quda.newMultigridQuda(&param.param)
+          mg_instance.set_ptr(ptr)
+                              ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3063:24: Cannot convert 'void *' to Python object
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          cdef void *ptr = quda.newMultigridQuda(&param.param)
+          mg_instance.set_ptr(ptr)
+          return mg_instance
+      
+      def destroyMultigridQuda(Pointer mg_instance):
+          quda.destroyMultigridQuda(mg_instance.ptr)
+                                               ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3067:41: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def destroyMultigridQuda(Pointer mg_instance):
+          quda.destroyMultigridQuda(mg_instance.ptr)
+      
+      def updateMultigridQuda(Pointer mg_instance, QudaMultigridParam param):
+          quda.updateMultigridQuda(mg_instance.ptr, &param.param)
+                                              ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3070:40: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def updateMultigridQuda(Pointer mg_instance, QudaMultigridParam param):
+          quda.updateMultigridQuda(mg_instance.ptr, &param.param)
+      
+      def dumpMultigridQuda(Pointer mg_instance, QudaMultigridParam param):
+          quda.dumpMultigridQuda(mg_instance.ptr, &param.param)
+                                            ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3073:38: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.dumpMultigridQuda(mg_instance.ptr, &param.param)
+      
+      def dslashQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param, quda.QudaParity parity):
+          assert h_out.dtype == "void"
+          assert h_in.dtype == "void"
+          quda.dslashQuda(h_out.ptr, h_in.ptr, &inv_param.param, parity)
+                               ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3078:25: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.dumpMultigridQuda(mg_instance.ptr, &param.param)
+      
+      def dslashQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param, quda.QudaParity parity):
+          assert h_out.dtype == "void"
+          assert h_in.dtype == "void"
+          quda.dslashQuda(h_out.ptr, h_in.ptr, &inv_param.param, parity)
+                                         ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3078:35: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      # def dslashMultiSrcCloverQuda(Pointers_hp_x, Pointers_hp_b, QudaInvertParam param, QudaParity parity, Pointer h_gauge, QudaGaugeParam gauge_param, Pointer h_clover, Pointer h_clovinv)
+      
+      def cloverQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param, quda.QudaParity parity, int inverse):
+          assert h_out.dtype == "void"
+          assert h_in.dtype == "void"
+          quda.cloverQuda(h_out.ptr, h_in.ptr, &inv_param.param, parity, inverse)
+                               ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3087:25: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      # def dslashMultiSrcCloverQuda(Pointers_hp_x, Pointers_hp_b, QudaInvertParam param, QudaParity parity, Pointer h_gauge, QudaGaugeParam gauge_param, Pointer h_clover, Pointer h_clovinv)
+      
+      def cloverQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param, quda.QudaParity parity, int inverse):
+          assert h_out.dtype == "void"
+          assert h_in.dtype == "void"
+          quda.cloverQuda(h_out.ptr, h_in.ptr, &inv_param.param, parity, inverse)
+                                         ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3087:35: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.cloverQuda(h_out.ptr, h_in.ptr, &inv_param.param, parity, inverse)
+      
+      def MatQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param):
+          assert h_out.dtype == "void"
+          assert h_in.dtype == "void"
+          quda.MatQuda(h_out.ptr, h_in.ptr, &inv_param.param)
+                            ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3092:22: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.cloverQuda(h_out.ptr, h_in.ptr, &inv_param.param, parity, inverse)
+      
+      def MatQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param):
+          assert h_out.dtype == "void"
+          assert h_in.dtype == "void"
+          quda.MatQuda(h_out.ptr, h_in.ptr, &inv_param.param)
+                                      ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3092:32: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.MatQuda(h_out.ptr, h_in.ptr, &inv_param.param)
+      
+      def MatDagMatQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param):
+          assert h_out.dtype == "void"
+          assert h_in.dtype == "void"
+          quda.MatDagMatQuda(h_out.ptr, h_in.ptr, &inv_param.param)
+                                  ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3097:28: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.MatQuda(h_out.ptr, h_in.ptr, &inv_param.param)
+      
+      def MatDagMatQuda(Pointer h_out, Pointer h_in, QudaInvertParam inv_param):
+          assert h_out.dtype == "void"
+          assert h_in.dtype == "void"
+          quda.MatDagMatQuda(h_out.ptr, h_in.ptr, &inv_param.param)
+                                            ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3097:38: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      # void pack_ghost(void **cpuLink, void **cpuGhost, int nFace, QudaPrecision precision)
+      # void computeKSLinkQuda(void* fatlink, void* longlink, void* ulink, void* inlink, double *path_coeff, QudaGaugeParam *param)
+      
+      def momResidentQuda(Pointers mom, QudaGaugeParam param):
+          assert mom.dtype == "void"
+          quda.momResidentQuda(mom.ptr, &param.param)
+                                  ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3105:28: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.momResidentQuda(mom.ptr, &param.param)
+      
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert mom.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+                                                                   ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3110:61: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.momResidentQuda(mom.ptr, &param.param)
+      
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert mom.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+                                                                                                ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3110:90: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.momResidentQuda(mom.ptr, &param.param)
+      
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert mom.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+                                                                                                                        ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3110:114: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.momResidentQuda(mom.ptr, &param.param)
+      
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert mom.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+                                               ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3110:41: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          quda.momResidentQuda(mom.ptr, &param.param)
+      
+      def computeGaugeForceQuda(Pointers mom, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert mom.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+                                                             ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3110:55: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+      
+      def computeGaugePathQuda(Pointers out, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert out.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugePathQuda(out.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+                                                                  ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3115:60: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+      
+      def computeGaugePathQuda(Pointers out, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert out.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugePathQuda(out.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+                                                                                               ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3115:89: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+      
+      def computeGaugePathQuda(Pointers out, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert out.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugePathQuda(out.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+                                                                                                                       ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3115:113: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+      
+      def computeGaugePathQuda(Pointers out, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert out.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugePathQuda(out.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+                                              ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3115:40: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          return quda.computeGaugeForceQuda(mom.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+      
+      def computeGaugePathQuda(Pointers out, Pointers sitelink, Pointer input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double dt, QudaGaugeParam qudaGaugeParam):
+          assert out.dtype == "void"
+          assert sitelink.dtype == "void"
+          return quda.computeGaugePathQuda(out.ptr, sitelink.ptr, <int ***>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, dt, &qudaGaugeParam.param)
+                                                            ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3115:54: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def computeGaugeLoopTraceQuda(Pointer traces, Pointers input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double factor):
+          assert traces.dtype == "double_complex"
+          assert input_path_buf.dtype == "int"
+          assert path_length.dtype == "int"
+          assert loop_coeff.dtype == "double"
+          quda.computeGaugeLoopTraceQuda(<double complex *>traces.ptr, <int **>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, factor)
+                                         ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3122:35: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def computeGaugeLoopTraceQuda(Pointer traces, Pointers input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double factor):
+          assert traces.dtype == "double_complex"
+          assert input_path_buf.dtype == "int"
+          assert path_length.dtype == "int"
+          assert loop_coeff.dtype == "double"
+          quda.computeGaugeLoopTraceQuda(<double complex *>traces.ptr, <int **>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, factor)
+                                                                       ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3122:65: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def computeGaugeLoopTraceQuda(Pointer traces, Pointers input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double factor):
+          assert traces.dtype == "double_complex"
+          assert input_path_buf.dtype == "int"
+          assert path_length.dtype == "int"
+          assert loop_coeff.dtype == "double"
+          quda.computeGaugeLoopTraceQuda(<double complex *>traces.ptr, <int **>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, factor)
+                                                                                                   ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3122:93: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      def computeGaugeLoopTraceQuda(Pointer traces, Pointers input_path_buf, Pointer path_length, Pointer loop_coeff, int num_paths, int max_length, double factor):
+          assert traces.dtype == "double_complex"
+          assert input_path_buf.dtype == "int"
+          assert path_length.dtype == "int"
+          assert loop_coeff.dtype == "double"
+          quda.computeGaugeLoopTraceQuda(<double complex *>traces.ptr, <int **>input_path_buf.ptr, <int *>path_length.ptr, <double *>loop_coeff.ptr, num_paths, max_length, factor)
+                                                                                                                           ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3122:117: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      
+      def updateGaugeFieldQuda(Pointers gauge, Pointers momentum, double dt, int conj_mom, int exact, QudaGaugeParam param):
+          assert gauge.dtype == "void"
+          assert momentum.dtype == "void"
+          quda.updateGaugeFieldQuda(gauge.ptr, momentum.ptr, dt, conj_mom, exact, &param.param)
+                                         ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3128:35: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      
+      def updateGaugeFieldQuda(Pointers gauge, Pointers momentum, double dt, int conj_mom, int exact, QudaGaugeParam param):
+          assert gauge.dtype == "void"
+          assert momentum.dtype == "void"
+          quda.updateGaugeFieldQuda(gauge.ptr, momentum.ptr, dt, conj_mom, exact, &param.param)
+                                                       ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3128:49: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      # void staggeredPhaseQuda(void *gauge_h, QudaGaugeParam *param)
+      
+      def projectSU3Quda(Pointers gauge_h, double tol, QudaGaugeParam param):
+          assert gauge_h.dtype == "void"
+          quda.projectSU3Quda(gauge_h.ptr, tol, &param.param)
+                                     ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3134:31: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+          assert gauge_h.dtype == "void"
+          quda.projectSU3Quda(gauge_h.ptr, tol, &param.param)
+      
+      def momActionQuda(Pointers momentum, QudaGaugeParam param):
+          assert momentum.dtype == "void"
+          return quda.momActionQuda(momentum.ptr, &param.param)
+                                            ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3138:38: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def computeCloverForceQuda(Pointers mom, double dt, Pointers x, Pointers p, Pointer coeff, double kappa2, double ck, int nvector, double multiplicity, Pointers gauge, QudaGaugeParam gauge_param, QudaInvertParam inv_param):
+          assert mom.dtype == "void"
+          assert x.dtype == "void"
+          assert coeff.dtype == "double"
+          quda.computeCloverForceQuda(mom.ptr, dt, x.ptrs, NULL, <double *>coeff.ptr, kappa2, ck, nvector, multiplicity, NULL, &gauge_param.param, &inv_param.param)
+                                                                 ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3151:59: Python objects cannot be cast to pointers of primitive types
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def computeCloverForceQuda(Pointers mom, double dt, Pointers x, Pointers p, Pointer coeff, double kappa2, double ck, int nvector, double multiplicity, Pointers gauge, QudaGaugeParam gauge_param, QudaInvertParam inv_param):
+          assert mom.dtype == "void"
+          assert x.dtype == "void"
+          assert coeff.dtype == "double"
+          quda.computeCloverForceQuda(mom.ptr, dt, x.ptrs, NULL, <double *>coeff.ptr, kappa2, ck, nvector, multiplicity, NULL, &gauge_param.param, &inv_param.param)
+                                         ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3151:35: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def computeCloverForceQuda(Pointers mom, double dt, Pointers x, Pointers p, Pointer coeff, double kappa2, double ck, int nvector, double multiplicity, Pointers gauge, QudaGaugeParam gauge_param, QudaInvertParam inv_param):
+          assert mom.dtype == "void"
+          assert x.dtype == "void"
+          assert coeff.dtype == "double"
+          quda.computeCloverForceQuda(mom.ptr, dt, x.ptrs, NULL, <double *>coeff.ptr, kappa2, ck, nvector, multiplicity, NULL, &gauge_param.param, &inv_param.param)
+                                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3151:46: Cannot convert Python object to 'void **'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def computeGaugeFixingOVRQuda(Pointers gauge, unsigned int gauge_dir, unsigned int Nsteps, unsigned int verbose_interval, double relax_boost, double tolerance, unsigned int reunit_interval, unsigned int stopWtheta, QudaGaugeParam param, list timeinfo):
+          assert len(timeinfo) >= 3
+          assert gauge.dtype == "void"
+          cdef double c_timeinfo[3]
+          ret = quda.computeGaugeFixingOVRQuda(gauge.ptr, gauge_dir, Nsteps, verbose_interval, relax_boost, tolerance, reunit_interval, stopWtheta, &param.param, c_timeinfo)
+                                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3191:46: Cannot convert Python object to 'void *'
+      
+      Error compiling Cython file:
+      ------------------------------------------------------------
+      ...
+      
+      def computeGaugeFixingFFTQuda(Pointers gauge, unsigned int gauge_dir, unsigned int Nsteps, unsigned int verbose_interval, double alpha, unsigned int autotune, double tolerance, unsigned int stopWtheta, QudaGaugeParam param, list timeinfo):
+          assert len(timeinfo) >= 3
+          assert gauge.dtype == "void"
+          cdef double c_timeinfo[3]
+          ret = quda.computeGaugeFixingFFTQuda(gauge.ptr, gauge_dir, Nsteps, verbose_interval, alpha, autotune, tolerance, stopWtheta, &param.param, c_timeinfo)
+                                                    ^
+      ------------------------------------------------------------
+      
+      pyquda/src/pyquda.pyx:3200:46: Cannot convert Python object to 'void *'
+      Traceback (most recent call last):
+        File "<string>", line 2, in <module>
+        File "<pip-setuptools-caller>", line 34, in <module>
+        File "/home/aistudio/external-libraries/PyQuda/setup.py", line 27, in <module>
+          ext_modules = cythonize(
+        File "/home/aistudio/external-libraries/Cython/Build/Dependencies.py", line 1134, in cythonize
+          cythonize_one(*args)
+        File "/home/aistudio/external-libraries/Cython/Build/Dependencies.py", line 1301, in cythonize_one
+          raise CompileError(None, pyx_file)
+      Cython.Compiler.Errors.CompileError: pyquda/src/pyquda.pyx
+      [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+error: metadata-generation-failed
+
+× Encountered error while generating package metadata.
+╰─> See above for output.
+
+note: This is an issue with the package mentioned above, not pip.
+hint: See above for details.
