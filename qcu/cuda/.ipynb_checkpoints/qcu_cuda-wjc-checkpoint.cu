@@ -1,13 +1,13 @@
 #pragma nv_verbose
 #pragma optimize(5)
 #include "qcu.h"
+#include <assert.h>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <iostream>
-#include <random>
-#include <time.h>
+
+#define BLOCK_SIZE 256
+#define WARP_SIZE 32
 
 #define checkCudaErrors(err)                                                   \
   {                                                                            \
@@ -102,11 +102,21 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
                        int lat_x, const int lat_y, const int lat_z,
                        const int lat_t, const int lat_xcc, int lat_yxcc,
                        const int lat_zyxcc, const int lat_tzyxcc,
-                       const int lat_xsc, int lat_yxsc, const int lat_zyxsc) {
-  int x = blockIdx.x;
-  int y = blockIdx.y;
-  int z = blockIdx.z;
-  int t = threadIdx.x;
+                       const int lat_xsc, int lat_yxsc, const int lat_zyxsc,
+                       const int parity) {
+  int thread = blockIdx.x * blockDim.x + threadIdx.x;
+  int t = thread / (lat_x * lat_y * lat_z);
+  thread -= t * (lat_x * lat_y * lat_z);
+  int z = thread / (lat_x * lat_y);
+  thread -= z * (lat_x * lat_y);
+  int y = thread / lat_x;
+  int x = thread - y * lat_x;
+  __shared__ LatticeComplex warp_output_vec[BLOCK_SIZE * 12];
+  int warp_thread_rank = threadIdx.x & (WARP_SIZE - 1);
+  int warp_pos = threadIdx.x >> 5;
+  LatticeComplex *shared_dest =
+      (static_cast<LatticeComplex *>(device_dest) +
+       blockIdx.x * BLOCK_SIZE * 12 + warp_pos * WARP_SIZE * 12);
   int move;
   int local_lat_x = lat_x;
   int local_lat_y = lat_y;
@@ -119,6 +129,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
   int local_lat_yxcc = lat_yxcc;
   int local_lat_zyxcc = lat_zyxcc;
   int local_lat_tzyxcc = lat_tzyxcc;
+  int oe = (y + z + t) % 2;
   LatticeComplex I(0.0, 1.0);
   LatticeComplex zero(0.0, 0.0);
   LatticeComplex *origin_U =
@@ -148,6 +159,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
   //         dest(x, y, z, t, s, c) += src(x, y, z, t, s, c) * 0;
   //     }
   // }
+
   {
     // backward x
     // if (x == 0) {
@@ -156,7 +168,8 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = -1;
     // }
     move = -1 + (x == 0) * local_lat_x;
-    tmp_U = (origin_U + move * 9);
+    move = move * (oe == parity);
+    tmp_U = (origin_U + move * 9 + (1 - parity) * lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -190,7 +203,8 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = 1;
     // }
     move = 1 - (x == local_lat_x - 1) * local_lat_x;
-    tmp_U = origin_U;
+    move = move * (oe != parity);
+    tmp_U = (origin_U + parity * lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -223,7 +237,8 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = -1;
     // }
     move = -1 + (y == 0) * local_lat_y;
-    tmp_U = (origin_U + move * local_lat_xcc + local_lat_tzyxcc);
+    tmp_U = (origin_U + move * local_lat_xcc + local_lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -257,7 +272,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = 1;
     // }
     move = 1 - (y == local_lat_y - 1) * local_lat_y;
-    tmp_U = (origin_U + local_lat_tzyxcc);
+    tmp_U = (origin_U + local_lat_tzyxcc * 2 + parity * lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -289,7 +304,8 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = -1;
     // }
     move = -1 + (z == 0) * local_lat_z;
-    tmp_U = (origin_U + move * local_lat_yxcc + local_lat_tzyxcc * 2);
+    tmp_U = (origin_U + move * local_lat_yxcc + local_lat_tzyxcc * 4 +
+             (1 - parity) * lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -323,7 +339,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = 1;
     // }
     move = 1 - (z == local_lat_z - 1) * local_lat_z;
-    tmp_U = (origin_U + local_lat_tzyxcc * 2);
+    tmp_U = (origin_U + local_lat_tzyxcc * 4 + parity * lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -356,7 +372,8 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = -1;
     // }
     move = -1 + (t == 0) * local_lat_t;
-    tmp_U = (origin_U + move * local_lat_zyxcc + local_lat_tzyxcc * 3);
+    tmp_U = (origin_U + move * local_lat_zyxcc + local_lat_tzyxcc * 6 +
+             (1 - parity) * lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -390,7 +407,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = 1;
     // }
     move = 1 - (t == local_lat_t - 1) * local_lat_t;
-    tmp_U = (origin_U + local_lat_tzyxcc * 3);
+    tmp_U = (origin_U + local_lat_tzyxcc * 6 + parity * lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -415,12 +432,18 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     }
   }
   for (int i = 0; i < 12; i++) {
-    dest[i] = local_dest[i];
+    warp_output_vec[threadIdx.x * 12 + i] = local_dest[i];
   }
+  __syncthreads();
+  for (int i = warp_thread_rank; i < WARP_SIZE * 12; i += WARP_SIZE) {
+    shared_dest[i] = warp_output_vec[warp_pos * WARP_SIZE * 12 + i];
+  }
+  __syncthreads();
 }
+
 void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
-               QcuParam *param) {
-  int lat_x = param->lattice_size[0];
+               QcuParam *param, int parity) {
+  int lat_x = param->lattice_size[0] >> 1;
   int lat_y = param->lattice_size[1];
   int lat_z = param->lattice_size[2];
   int lat_t = param->lattice_size[3];
@@ -428,48 +451,22 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
   int lat_yxcc = lat_y * lat_xcc;
   int lat_zyxcc = lat_z * lat_yxcc;
   int lat_tzyxcc = lat_t * lat_zyxcc;
-  int lat_stzyxcc = 4 * lat_tzyxcc;
   int lat_xsc = lat_x * 12;
   int lat_yxsc = lat_y * lat_xsc;
   int lat_zyxsc = lat_z * lat_yxsc;
-  int lat_tzyxsc = lat_t * lat_zyxsc;
-  unsigned long gauge_size = lat_stzyxcc * sizeof(LatticeComplex);
-  unsigned long fermi_size = lat_tzyxsc * sizeof(LatticeComplex);
-  void *device_U;
-  void *device_src;
-  void *device_dest;
-  checkCudaErrors(cudaMalloc(&device_U, gauge_size));
-  checkCudaErrors(cudaMalloc(&device_src, fermi_size));
-  checkCudaErrors(cudaMalloc(&device_dest, fermi_size));
-  checkCudaErrors(
-      cudaMemcpy(device_U, gauge, gauge_size, cudaMemcpyHostToDevice));
-  checkCudaErrors(
-      cudaMemcpy(device_src, fermion_in, fermi_size, cudaMemcpyHostToDevice));
-  dim3 gridSize(lat_x, lat_y, lat_z);
-  dim3 blockSize(lat_t);
-  clock_t start = clock();
-  const int loop(100);
-  int parity = 0;
-  for (int i = 0; i < loop; i++) {
-    dslash<<<gridSize, blockSize>>>(
-        device_U, device_src, device_dest, lat_x, lat_y, lat_z, lat_t, lat_xcc,
-        lat_yxcc, lat_zyxcc, lat_tzyxcc, lat_xsc, lat_yxsc, lat_zyxsc, parity);
-    checkCudaErrors(cudaDeviceSynchronize());
-  }
-  clock_t end0 = clock();
-  checkCudaErrors(
-      cudaMemcpy(fermion_out, device_dest, fermi_size, cudaMemcpyDeviceToHost));
-  clock_t end1 = clock();
+  dim3 gridDim(lat_tzyxcc / 9 / BLOCK_SIZE);
+  dim3 blockDim(BLOCK_SIZE);
+  checkCudaErrors(cudaDeviceSynchronize());
+  auto start = std::chrono::high_resolution_clock::now();
+  dslash<<<gridDim, blockDim>>>(
+      gauge, fermion_in, fermion_out, lat_x, lat_y, lat_z, lat_t, lat_xcc,
+      lat_yxcc, lat_zyxcc, lat_tzyxcc, lat_xsc, lat_yxsc, lat_zyxsc, parity);
   cudaError_t err = cudaGetLastError();
   checkCudaErrors(err);
-  std::cout << "################"
-            << "time cost without cudaMemcpy:"
-            << (double)(end0 - start) / loop / CLOCKS_PER_SEC << "s"
-            << std::endl;
-  std::cout << "################"
-            << "time cost with cudaMemcpy:"
-            << (double)(end1 - start) / CLOCKS_PER_SEC << "s" << std::endl;
-  checkCudaErrors(cudaFree(device_U));
-  checkCudaErrors(cudaFree(device_src));
-  checkCudaErrors(cudaFree(device_dest));
+  checkCudaErrors(cudaDeviceSynchronize());
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+  printf("total time: (without malloc free memcpy) : %.9lf sec\n",
+         double(duration) / 1e9);
 }

@@ -7,7 +7,6 @@
 #include <cstdio>
 
 #define BLOCK_SIZE 256
-#define WARP_SIZE 32
 
 #define checkCudaErrors(err)                                                   \
   {                                                                            \
@@ -111,12 +110,6 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
   thread -= z * (lat_x * lat_y);
   int y = thread / lat_x;
   int x = thread - y * lat_x;
-  __shared__ LatticeComplex warp_output_vec[BLOCK_SIZE * 12];
-  int warp_thread_rank = threadIdx.x & (WARP_SIZE - 1);
-  int warp_pos = threadIdx.x >> 5;
-  LatticeComplex *shared_dest =
-      (static_cast<LatticeComplex *>(device_dest) +
-       blockIdx.x * BLOCK_SIZE * 12 + warp_pos * WARP_SIZE * 12);
   int move;
   int local_lat_x = lat_x;
   int local_lat_y = lat_y;
@@ -432,13 +425,8 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     }
   }
   for (int i = 0; i < 12; i++) {
-    warp_output_vec[threadIdx.x * 12 + i] = local_dest[i];
+    dest[i] = local_dest[i];
   }
-  __syncthreads();
-  for (int i = warp_thread_rank; i < WARP_SIZE * 12; i += WARP_SIZE) {
-    shared_dest[i] = warp_output_vec[warp_pos * WARP_SIZE * 12 + i];
-  }
-  __syncthreads();
 }
 
 void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
