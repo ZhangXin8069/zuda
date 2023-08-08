@@ -1,13 +1,12 @@
 #pragma nv_verbose
 #pragma optimize(5)
 #include "qcu.h"
+#include <assert.h>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <iostream>
-#include <random>
-#include <time.h>
+
+#define BLOCK_SIZE 256
 
 #define checkCudaErrors(err)                                                   \
   {                                                                            \
@@ -104,10 +103,13 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
                        const int lat_zyxcc, const int lat_tzyxcc,
                        const int lat_xsc, int lat_yxsc, const int lat_zyxsc,
                        const int parity) {
-  int x = blockIdx.x;
-  int y = blockIdx.y;
-  int z = blockIdx.z;
-  int t = threadIdx.x;
+  int thread = blockIdx.x * blockDim.x + threadIdx.x;
+  int t = thread / (lat_x * lat_y * lat_z);
+  thread -= t * (lat_x * lat_y * lat_z);
+  int z = thread / (lat_x * lat_y);
+  thread -= z * (lat_x * lat_y);
+  int y = thread / lat_x;
+  int x = thread - y * lat_x;
   int move;
   int local_lat_x = lat_x;
   int local_lat_y = lat_y;
@@ -120,12 +122,12 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
   int local_lat_yxcc = lat_yxcc;
   int local_lat_zyxcc = lat_zyxcc;
   int local_lat_tzyxcc = lat_tzyxcc;
+  int oe = (y + z + t) % 2;
   LatticeComplex I(0.0, 1.0);
   LatticeComplex zero(0.0, 0.0);
   LatticeComplex *origin_U =
       ((static_cast<LatticeComplex *>(device_U)) + t * local_lat_zyxcc +
-       z * local_lat_yxcc + y * local_lat_xcc + x * 9 +
-       parity * 4 * local_lat_tzyxcc);
+       z * local_lat_yxcc + y * local_lat_xcc + x * 9);
   LatticeComplex *origin_src =
       ((static_cast<LatticeComplex *>(device_src)) + t * local_lat_zyxsc +
        z * local_lat_yxsc + y * local_lat_xsc + x * 12);
@@ -150,283 +152,281 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
   //         dest(x, y, z, t, s, c) += src(x, y, z, t, s, c) * 0;
   //     }
   // }
-  // {
-  //   // backward x
-  //   // if (x == 0) {
-  //   //   move = local_lat_x - 1;
-  //   // } else {
-  //   //   move = -1;
-  //   // }
-  //   move = -1 + (x == 0) * local_lat_x;
-  //   tmp_U = (origin_U + move * 9);
-  //   for (int i = 0; i < 6; i++) {
-  //     local_U[i] = tmp_U[i];
-  //   }
-  //   local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
-  //   local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
-  //   local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
-  //   tmp_src = (origin_src + move * 12);
-  //   for (int i = 0; i < 12; i++) {
-  //     local_src[i] = tmp_src[i];
-  //   }
-  //   for (int c0 = 0; c0 < 3; c0++) {
-  //     tmp0 = zero;
-  //     tmp1 = zero;
-  //     for (int c1 = 0; c1 < 3; c1++) {
-  //       tmp0 += (local_src[c1] + local_src[c1 + 9] * I) *
-  //               local_U[c1 * 3 + c0].conj();
-  //       tmp1 += (local_src[c1 + 3] + local_src[c1 + 6] * I) *
-  //               local_U[c1 * 3 + c0].conj();
-  //     }
-  //     local_dest[c0] += tmp0;
-  //     local_dest[c0 + 3] += tmp1;
-  //     local_dest[c0 + 6] -= tmp1 * I;
-  //     local_dest[c0 + 9] -= tmp0 * I;
-  //   }
-  // }
-  // {
-  //   // forward x
-  //   // if (x == local_lat_x - 1) {
-  //   //   move = 1 - local_lat_x;
-  //   // } else {
-  //   //   move = 1;
-  //   // }
-  //   move = 1 - (x == local_lat_x - 1) * local_lat_x;
-  //   tmp_U = origin_U;
-  //   for (int i = 0; i < 6; i++) {
-  //     local_U[i] = tmp_U[i];
-  //   }
-  //   local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
-  //   local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
-  //   local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
-  //   tmp_src = (origin_src + move * 12);
-  //   for (int i = 0; i < 12; i++) {
-  //     local_src[i] = tmp_src[i];
-  //   }
-  //   for (int c0 = 0; c0 < 3; c0++) {
-  //     tmp0 = zero;
-  //     tmp1 = zero;
-  //     for (int c1 = 0; c1 < 3; c1++) {
-  //       tmp0 += (local_src[c1] - local_src[c1 + 9] * I) * local_U[c0 * 3 +
-  //       c1]; tmp1 +=
-  //           (local_src[c1 + 3] - local_src[c1 + 6] * I) * local_U[c0 * 3 +
-  //           c1];
-  //     }
-  //     local_dest[c0] += tmp0;
-  //     local_dest[c0 + 3] += tmp1;
-  //     local_dest[c0 + 6] += tmp1 * I;
-  //     local_dest[c0 + 9] += tmp0 * I;
-  //   }
-  // }
-  // {
-  //   // backward y
-  //   // if (y == 0) {
-  //   //   move = local_lat_y - 1;
-  //   // } else {
-  //   //   move = -1;
-  //   // }
-  //   move = -1 + (y == 0) * local_lat_y;
-  //   tmp_U = (origin_U + move * local_lat_xcc + local_lat_tzyxcc);
-  //   for (int i = 0; i < 6; i++) {
-  //     local_U[i] = tmp_U[i];
-  //   }
-  //   local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
-  //   local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
-  //   local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
-  //   tmp_src = (origin_src + move * local_lat_xsc);
-  //   for (int i = 0; i < 12; i++) {
-  //     local_src[i] = tmp_src[i];
-  //   }
-  //   for (int c0 = 0; c0 < 3; c0++) {
-  //     tmp0 = zero;
-  //     tmp1 = zero;
-  //     for (int c1 = 0; c1 < 3; c1++) {
-  //       tmp0 +=
-  //           (local_src[c1] - local_src[c1 + 9]) * local_U[c1 * 3 +
-  //           c0].conj();
-  //       tmp1 += (local_src[c1 + 3] + local_src[c1 + 6]) *
-  //               local_U[c1 * 3 + c0].conj();
-  //     }
-  //     local_dest[c0] += tmp0;
-  //     local_dest[c0 + 3] += tmp1;
-  //     local_dest[c0 + 6] += tmp1;
-  //     local_dest[c0 + 9] -= tmp0;
-  //   }
-  // }
-  // {
-  //   // // forward y
-  //   // if (y == local_lat_y - 1) {
-  //   //   move = 1 - local_lat_y;
-  //   // } else {
-  //   //   move = 1;
-  //   // }
-  //   move = 1 - (y == local_lat_y - 1) * local_lat_y;
-  //   tmp_U = (origin_U + local_lat_tzyxcc);
-  //   for (int i = 0; i < 6; i++) {
-  //     local_U[i] = tmp_U[i];
-  //   }
-  //   local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
-  //   local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
-  //   local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
-  //   tmp_src = (origin_src + move * local_lat_xsc);
-  //   for (int i = 0; i < 12; i++) {
-  //     local_src[i] = tmp_src[i];
-  //   }
-  //   for (int c0 = 0; c0 < 3; c0++) {
-  //     tmp0 = zero;
-  //     tmp1 = zero;
-  //     for (int c1 = 0; c1 < 3; c1++) {
-  //       tmp0 += (local_src[c1] + local_src[c1 + 9]) * local_U[c0 * 3 + c1];
-  //       tmp1 += (local_src[c1 + 3] - local_src[c1 + 6]) * local_U[c0 * 3 +
-  //       c1];
-  //     }
-  //     local_dest[c0] += tmp0;
-  //     local_dest[c0 + 3] += tmp1;
-  //     local_dest[c0 + 6] -= tmp1;
-  //     local_dest[c0 + 9] += tmp0;
-  //   }
-  // }
-  // {
-  //   // backward z
-  //   // if (z == 0) {
-  //   //   move = local_lat_z - 1;
-  //   // } else {
-  //   //   move = -1;
-  //   // }
-  //   move = -1 + (z == 0) * local_lat_z;
-  //   tmp_U = (origin_U + move * local_lat_yxcc + local_lat_tzyxcc * 2);
-  //   for (int i = 0; i < 6; i++) {
-  //     local_U[i] = tmp_U[i];
-  //   }
-  //   local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
-  //   local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
-  //   local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
-  //   tmp_src = (origin_src + move * local_lat_yxsc);
-  //   for (int i = 0; i < 12; i++) {
-  //     local_src[i] = tmp_src[i];
-  //   }
-  //   for (int c0 = 0; c0 < 3; c0++) {
-  //     tmp0 = zero;
-  //     tmp1 = zero;
-  //     for (int c1 = 0; c1 < 3; c1++) {
-  //       tmp0 += (local_src[c1] + local_src[c1 + 6] * I) *
-  //               local_U[c1 * 3 + c0].conj();
-  //       tmp1 += (local_src[c1 + 3] - local_src[c1 + 9] * I) *
-  //               local_U[c1 * 3 + c0].conj();
-  //     }
-  //     local_dest[c0] += tmp0;
-  //     local_dest[c0 + 3] += tmp1;
-  //     local_dest[c0 + 6] -= tmp0 * I;
-  //     local_dest[c0 + 9] += tmp1 * I;
-  //   }
-  // }
-  // {
-  //   // forward z
-  //   // if (z == local_lat_z - 1) {
-  //   //   move = 1 - local_lat_z;
-  //   // } else {
-  //   //   move = 1;
-  //   // }
-  //   move = 1 - (z == local_lat_z - 1) * local_lat_z;
-  //   tmp_U = (origin_U + local_lat_tzyxcc * 2);
-  //   for (int i = 0; i < 6; i++) {
-  //     local_U[i] = tmp_U[i];
-  //   }
-  //   local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
-  //   local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
-  //   local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
-  //   tmp_src = (origin_src + move * local_lat_yxsc);
-  //   for (int i = 0; i < 12; i++) {
-  //     local_src[i] = tmp_src[i];
-  //   }
-  //   for (int c0 = 0; c0 < 3; c0++) {
-  //     tmp0 = zero;
-  //     tmp1 = zero;
-  //     for (int c1 = 0; c1 < 3; c1++) {
-  //       tmp0 += (local_src[c1] - local_src[c1 + 6] * I) * local_U[c0 * 3 +
-  //       c1]; tmp1 +=
-  //           (local_src[c1 + 3] + local_src[c1 + 9] * I) * local_U[c0 * 3 +
-  //           c1];
-  //     }
-  //     local_dest[c0] += tmp0;
-  //     local_dest[c0 + 3] += tmp1;
-  //     local_dest[c0 + 6] += tmp0 * I;
-  //     local_dest[c0 + 9] -= tmp1 * I;
-  //   }
-  // }
-  // {
-  //   // backward t
-  //   // if (t == 0) {
-  //   //   move = local_lat_t - 1;
-  //   // } else {
-  //   //   move = -1;
-  //   // }
-  //   move = -1 + (t == 0) * local_lat_t;
-  //   tmp_U = (origin_U + move * local_lat_zyxcc + local_lat_tzyxcc * 3);
-  //   for (int i = 0; i < 6; i++) {
-  //     local_U[i] = tmp_U[i];
-  //   }
-  //   local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
-  //   local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
-  //   local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
-  //   tmp_src = (origin_src + move * local_lat_zyxsc);
-  //   for (int i = 0; i < 12; i++) {
-  //     local_src[i] = tmp_src[i];
-  //   }
-  //   for (int c0 = 0; c0 < 3; c0++) {
-  //     tmp0 = zero;
-  //     tmp1 = zero;
-  //     for (int c1 = 0; c1 < 3; c1++) {
-  //       tmp0 +=
-  //           (local_src[c1] + local_src[c1 + 6]) * local_U[c1 * 3 +
-  //           c0].conj();
-  //       tmp1 += (local_src[c1 + 3] + local_src[c1 + 9]) *
-  //               local_U[c1 * 3 + c0].conj();
-  //     }
-  //     local_dest[c0] += tmp0;
-  //     local_dest[c0 + 3] += tmp1;
-  //     local_dest[c0 + 6] += tmp0;
-  //     local_dest[c0 + 9] += tmp1;
-  //   }
-  // }
-  // {
-  //   // forward t
-  //   // if (t == local_lat_t - 1) {
-  //   //   move = 1 - local_lat_t;
-  //   // } else {
-  //   //   move = 1;
-  //   // }
-  //   move = 1 - (t == local_lat_t - 1) * local_lat_t;
-  //   tmp_U = (origin_U + local_lat_tzyxcc * 3);
-  //   for (int i = 0; i < 6; i++) {
-  //     local_U[i] = tmp_U[i];
-  //   }
-  //   local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
-  //   local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
-  //   local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
-  //   tmp_src = (origin_src + move * local_lat_zyxsc);
-  //   for (int i = 0; i < 12; i++) {
-  //     local_src[i] = tmp_src[i];
-  //   }
-  //   for (int c0 = 0; c0 < 3; c0++) {
-  //     tmp0 = zero;
-  //     tmp1 = zero;
-  //     for (int c1 = 0; c1 < 3; c1++) {
-  //       tmp0 += (local_src[c1] - local_src[c1 + 6]) * local_U[c0 * 3 + c1];
-  //       tmp1 += (local_src[c1 + 3] - local_src[c1 + 9]) * local_U[c0 * 3 +
-  //       c1];
-  //     }
-  //     local_dest[c0] += tmp0;
-  //     local_dest[c0 + 3] += tmp1;
-  //     local_dest[c0 + 6] -= tmp0;
-  //     local_dest[c0 + 9] -= tmp1;
-  //   }
-  // }
+
+  {
+    // backward x
+    // if (x == 0) {
+    //   move = local_lat_x - 1;
+    // } else {
+    //   move = -1;
+    // }
+    move = -1 + (x == 0) * local_lat_x;
+    move = move * (oe == parity);
+    tmp_U = (origin_U + move * 9 + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      local_U[i] = tmp_U[i];
+    }
+    local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
+    local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
+    local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
+    tmp_src = (origin_src + move * 12);
+    for (int i = 0; i < 12; i++) {
+      local_src[i] = tmp_src[i];
+    }
+    for (int c0 = 0; c0 < 3; c0++) {
+      tmp0 = zero;
+      tmp1 = zero;
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 += (local_src[c1] + local_src[c1 + 9] * I) *
+                local_U[c1 * 3 + c0].conj();
+        tmp1 += (local_src[c1 + 3] + local_src[c1 + 6] * I) *
+                local_U[c1 * 3 + c0].conj();
+      }
+      local_dest[c0] += tmp0;
+      local_dest[c0 + 3] += tmp1;
+      local_dest[c0 + 6] -= tmp1 * I;
+      local_dest[c0 + 9] -= tmp0 * I;
+    }
+  }
+  {
+    // forward x
+    // if (x == local_lat_x - 1) {
+    //   move = 1 - local_lat_x;
+    // } else {
+    //   move = 1;
+    // }
+    move = 1 - (x == local_lat_x - 1) * local_lat_x;
+    move = move * (oe != parity);
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      local_U[i] = tmp_U[i];
+    }
+    local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
+    local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
+    local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
+    tmp_src = (origin_src + move * 12);
+    for (int i = 0; i < 12; i++) {
+      local_src[i] = tmp_src[i];
+    }
+    for (int c0 = 0; c0 < 3; c0++) {
+      tmp0 = zero;
+      tmp1 = zero;
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 += (local_src[c1] - local_src[c1 + 9] * I) * local_U[c0 * 3 + c1];
+        tmp1 +=
+            (local_src[c1 + 3] - local_src[c1 + 6] * I) * local_U[c0 * 3 + c1];
+      }
+      local_dest[c0] += tmp0;
+      local_dest[c0 + 3] += tmp1;
+      local_dest[c0 + 6] += tmp1 * I;
+      local_dest[c0 + 9] += tmp0 * I;
+    }
+  }
+  {
+    // backward y
+    // if (y == 0) {
+    //   move = local_lat_y - 1;
+    // } else {
+    //   move = -1;
+    // }
+    move = -1 + (y == 0) * local_lat_y;
+    tmp_U = (origin_U + move * local_lat_xcc + local_lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      local_U[i] = tmp_U[i];
+    }
+    local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
+    local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
+    local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
+    tmp_src = (origin_src + move * local_lat_xsc);
+    for (int i = 0; i < 12; i++) {
+      local_src[i] = tmp_src[i];
+    }
+    for (int c0 = 0; c0 < 3; c0++) {
+      tmp0 = zero;
+      tmp1 = zero;
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 +=
+            (local_src[c1] - local_src[c1 + 9]) * local_U[c1 * 3 + c0].conj();
+        tmp1 += (local_src[c1 + 3] + local_src[c1 + 6]) *
+                local_U[c1 * 3 + c0].conj();
+      }
+      local_dest[c0] += tmp0;
+      local_dest[c0 + 3] += tmp1;
+      local_dest[c0 + 6] += tmp1;
+      local_dest[c0 + 9] -= tmp0;
+    }
+  }
+  {
+    // // forward y
+    // if (y == local_lat_y - 1) {
+    //   move = 1 - local_lat_y;
+    // } else {
+    //   move = 1;
+    // }
+    move = 1 - (y == local_lat_y - 1) * local_lat_y;
+    tmp_U = (origin_U + local_lat_tzyxcc * 2 + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      local_U[i] = tmp_U[i];
+    }
+    local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
+    local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
+    local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
+    tmp_src = (origin_src + move * local_lat_xsc);
+    for (int i = 0; i < 12; i++) {
+      local_src[i] = tmp_src[i];
+    }
+    for (int c0 = 0; c0 < 3; c0++) {
+      tmp0 = zero;
+      tmp1 = zero;
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 += (local_src[c1] + local_src[c1 + 9]) * local_U[c0 * 3 + c1];
+        tmp1 += (local_src[c1 + 3] - local_src[c1 + 6]) * local_U[c0 * 3 + c1];
+      }
+      local_dest[c0] += tmp0;
+      local_dest[c0 + 3] += tmp1;
+      local_dest[c0 + 6] -= tmp1;
+      local_dest[c0 + 9] += tmp0;
+    }
+  }
+  {
+    // backward z
+    // if (z == 0) {
+    //   move = local_lat_z - 1;
+    // } else {
+    //   move = -1;
+    // }
+    move = -1 + (z == 0) * local_lat_z;
+    tmp_U = (origin_U + move * local_lat_yxcc + local_lat_tzyxcc * 4 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      local_U[i] = tmp_U[i];
+    }
+    local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
+    local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
+    local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
+    tmp_src = (origin_src + move * local_lat_yxsc);
+    for (int i = 0; i < 12; i++) {
+      local_src[i] = tmp_src[i];
+    }
+    for (int c0 = 0; c0 < 3; c0++) {
+      tmp0 = zero;
+      tmp1 = zero;
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 += (local_src[c1] + local_src[c1 + 6] * I) *
+                local_U[c1 * 3 + c0].conj();
+        tmp1 += (local_src[c1 + 3] - local_src[c1 + 9] * I) *
+                local_U[c1 * 3 + c0].conj();
+      }
+      local_dest[c0] += tmp0;
+      local_dest[c0 + 3] += tmp1;
+      local_dest[c0 + 6] -= tmp0 * I;
+      local_dest[c0 + 9] += tmp1 * I;
+    }
+  }
+  {
+    // forward z
+    // if (z == local_lat_z - 1) {
+    //   move = 1 - local_lat_z;
+    // } else {
+    //   move = 1;
+    // }
+    move = 1 - (z == local_lat_z - 1) * local_lat_z;
+    tmp_U = (origin_U + local_lat_tzyxcc * 4 + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      local_U[i] = tmp_U[i];
+    }
+    local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
+    local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
+    local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
+    tmp_src = (origin_src + move * local_lat_yxsc);
+    for (int i = 0; i < 12; i++) {
+      local_src[i] = tmp_src[i];
+    }
+    for (int c0 = 0; c0 < 3; c0++) {
+      tmp0 = zero;
+      tmp1 = zero;
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 += (local_src[c1] - local_src[c1 + 6] * I) * local_U[c0 * 3 + c1];
+        tmp1 +=
+            (local_src[c1 + 3] + local_src[c1 + 9] * I) * local_U[c0 * 3 + c1];
+      }
+      local_dest[c0] += tmp0;
+      local_dest[c0 + 3] += tmp1;
+      local_dest[c0 + 6] += tmp0 * I;
+      local_dest[c0 + 9] -= tmp1 * I;
+    }
+  }
+  {
+    // backward t
+    // if (t == 0) {
+    //   move = local_lat_t - 1;
+    // } else {
+    //   move = -1;
+    // }
+    move = -1 + (t == 0) * local_lat_t;
+    tmp_U = (origin_U + move * local_lat_zyxcc + local_lat_tzyxcc * 6 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      local_U[i] = tmp_U[i];
+    }
+    local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
+    local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
+    local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
+    tmp_src = (origin_src + move * local_lat_zyxsc);
+    for (int i = 0; i < 12; i++) {
+      local_src[i] = tmp_src[i];
+    }
+    for (int c0 = 0; c0 < 3; c0++) {
+      tmp0 = zero;
+      tmp1 = zero;
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 +=
+            (local_src[c1] + local_src[c1 + 6]) * local_U[c1 * 3 + c0].conj();
+        tmp1 += (local_src[c1 + 3] + local_src[c1 + 9]) *
+                local_U[c1 * 3 + c0].conj();
+      }
+      local_dest[c0] += tmp0;
+      local_dest[c0 + 3] += tmp1;
+      local_dest[c0 + 6] += tmp0;
+      local_dest[c0 + 9] += tmp1;
+    }
+  }
+  {
+    // forward t
+    // if (t == local_lat_t - 1) {
+    //   move = 1 - local_lat_t;
+    // } else {
+    //   move = 1;
+    // }
+    move = 1 - (t == local_lat_t - 1) * local_lat_t;
+    tmp_U = (origin_U + local_lat_tzyxcc * 6 + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      local_U[i] = tmp_U[i];
+    }
+    local_U[6] = (local_U[1] * local_U[5] - local_U[2] * local_U[4]).conj();
+    local_U[7] = (local_U[2] * local_U[3] - local_U[0] * local_U[5]).conj();
+    local_U[8] = (local_U[0] * local_U[4] - local_U[1] * local_U[3]).conj();
+    tmp_src = (origin_src + move * local_lat_zyxsc);
+    for (int i = 0; i < 12; i++) {
+      local_src[i] = tmp_src[i];
+    }
+    for (int c0 = 0; c0 < 3; c0++) {
+      tmp0 = zero;
+      tmp1 = zero;
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 += (local_src[c1] - local_src[c1 + 6]) * local_U[c0 * 3 + c1];
+        tmp1 += (local_src[c1 + 3] - local_src[c1 + 9]) * local_U[c0 * 3 + c1];
+      }
+      local_dest[c0] += tmp0;
+      local_dest[c0 + 3] += tmp1;
+      local_dest[c0 + 6] -= tmp0;
+      local_dest[c0 + 9] -= tmp1;
+    }
+  }
   for (int i = 0; i < 12; i++) {
     dest[i] = local_dest[i];
   }
-  // dest = local_dest;
-  // memcpy(dest, local_dest, sizeof(local_dest));
 }
 
 void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
@@ -435,10 +435,6 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
   int lat_y = param->lattice_size[1];
   int lat_z = param->lattice_size[2];
   int lat_t = param->lattice_size[3];
-  std::cout << "################"
-            << "\nparity:" << parity << "\nlat_x:" << lat_x
-            << "\nlat_y:" << lat_y << "\nlat_z:" << lat_z << "\nlat_t:" << lat_t
-            << std::endl;
   int lat_xcc = lat_x * 9;
   int lat_yxcc = lat_y * lat_xcc;
   int lat_zyxcc = lat_z * lat_yxcc;
@@ -446,34 +442,19 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
   int lat_xsc = lat_x * 12;
   int lat_yxsc = lat_y * lat_xsc;
   int lat_zyxsc = lat_z * lat_yxsc;
-  dim3 gridSize(lat_x, lat_y, lat_z);
-  dim3 blockSize(lat_t);
-  const int loop(100);
-  clock_t start = clock();
-  for (int i = 0; i < loop; i++) {
-    // std::cout << "################"
-    //           << "\nfermion_in[" << i
-    //           << "]:" << (static_cast<LatticeComplex *>(fermion_in))[i].real
-    //           << std::endl;
-    // std::cout << "################"
-    //           << "\nfermion_out[" << i
-    //           << "]:" << (static_cast<LatticeComplex *>(fermion_out))[i].real
-    //           << std::endl;
-    // std::cout << "################"
-    //           << "\ngauge[" << i
-    //           << "]:" << (static_cast<LatticeComplex *>(gauge))[i].real
-    //           << std::endl;
-    // dslash<<<gridSize, blockSize>>>(
-    //     gauge, fermion_in, fermion_out, lat_x, lat_y, lat_z, lat_t, lat_xcc,
-    //     lat_yxcc, lat_zyxcc, lat_tzyxcc, lat_xsc, lat_yxsc, lat_zyxsc,
-    //     parity);
-    // checkCudaErrors(cudaDeviceSynchronize());
-  }
-  clock_t end = clock();
+  dim3 gridDim(lat_tzyxcc / 9 / BLOCK_SIZE);
+  dim3 blockDim(BLOCK_SIZE);
+  checkCudaErrors(cudaDeviceSynchronize());
+  auto start = std::chrono::high_resolution_clock::now();
+  dslash<<<gridDim, blockDim>>>(
+      gauge, fermion_in, fermion_out, lat_x, lat_y, lat_z, lat_t, lat_xcc,
+      lat_yxcc, lat_zyxcc, lat_tzyxcc, lat_xsc, lat_yxsc, lat_zyxsc, parity);
   cudaError_t err = cudaGetLastError();
   checkCudaErrors(err);
-  std::cout << "################"
-            << "time cost without cudaMemcpy:"
-            << (double)(end - start) / loop / CLOCKS_PER_SEC << "s"
-            << std::endl;
+  checkCudaErrors(cudaDeviceSynchronize());
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+  printf("total time: (without malloc free memcpy) : %.9lf sec\n",
+         double(duration) / 1e9);
 }

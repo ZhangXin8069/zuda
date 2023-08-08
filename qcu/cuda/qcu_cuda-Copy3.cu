@@ -5,8 +5,8 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
-
-#define BLOCK_SIZE 256
+#include <cuda.h>
+#include <cuda_runtime.h>
 
 #define checkCudaErrors(err)                                                   \
   {                                                                            \
@@ -103,13 +103,10 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
                        const int lat_zyxcc, const int lat_tzyxcc,
                        const int lat_xsc, int lat_yxsc, const int lat_zyxsc,
                        const int parity) {
-  int thread = blockIdx.x * blockDim.x + threadIdx.x;
-  int t = thread / (lat_x * lat_y * lat_z);
-  thread -= t * (lat_x * lat_y * lat_z);
-  int z = thread / (lat_x * lat_y);
-  thread -= z * (lat_x * lat_y);
-  int y = thread / lat_x;
-  int x = thread - y * lat_x;
+  int x = blockIdx.x;
+  int y = blockIdx.y;
+  int z = blockIdx.z;
+  int t = threadIdx.x;
   int move;
   int local_lat_x = lat_x;
   int local_lat_y = lat_y;
@@ -122,12 +119,12 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
   int local_lat_yxcc = lat_yxcc;
   int local_lat_zyxcc = lat_zyxcc;
   int local_lat_tzyxcc = lat_tzyxcc;
-  int oe = (y + z + t) % 2;
   LatticeComplex I(0.0, 1.0);
   LatticeComplex zero(0.0, 0.0);
   LatticeComplex *origin_U =
       ((static_cast<LatticeComplex *>(device_U)) + t * local_lat_zyxcc +
-       z * local_lat_yxcc + y * local_lat_xcc + x * 9);
+       z * local_lat_yxcc + y * local_lat_xcc + x * 9 +
+       parity * 4 * local_lat_tzyxcc);
   LatticeComplex *origin_src =
       ((static_cast<LatticeComplex *>(device_src)) + t * local_lat_zyxsc +
        z * local_lat_yxsc + y * local_lat_xsc + x * 12);
@@ -161,8 +158,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = -1;
     // }
     move = -1 + (x == 0) * local_lat_x;
-    move = move * (oe == parity);
-    tmp_U = (origin_U + move * 9 + (1 - parity) * lat_tzyxcc);
+    tmp_U = (origin_U + move * 9);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -196,8 +192,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = 1;
     // }
     move = 1 - (x == local_lat_x - 1) * local_lat_x;
-    move = move * (oe != parity);
-    tmp_U = (origin_U + parity * lat_tzyxcc);
+    tmp_U = origin_U;
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -230,8 +225,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = -1;
     // }
     move = -1 + (y == 0) * local_lat_y;
-    tmp_U = (origin_U + move * local_lat_xcc + local_lat_tzyxcc * 2 +
-             (1 - parity) * lat_tzyxcc);
+    tmp_U = (origin_U + move * local_lat_xcc + local_lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -265,7 +259,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = 1;
     // }
     move = 1 - (y == local_lat_y - 1) * local_lat_y;
-    tmp_U = (origin_U + local_lat_tzyxcc * 2 + parity * lat_tzyxcc);
+    tmp_U = (origin_U + local_lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -297,8 +291,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = -1;
     // }
     move = -1 + (z == 0) * local_lat_z;
-    tmp_U = (origin_U + move * local_lat_yxcc + local_lat_tzyxcc * 4 +
-             (1 - parity) * lat_tzyxcc);
+    tmp_U = (origin_U + move * local_lat_yxcc + local_lat_tzyxcc * 2);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -332,7 +325,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = 1;
     // }
     move = 1 - (z == local_lat_z - 1) * local_lat_z;
-    tmp_U = (origin_U + local_lat_tzyxcc * 4 + parity * lat_tzyxcc);
+    tmp_U = (origin_U + local_lat_tzyxcc * 2);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -365,8 +358,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = -1;
     // }
     move = -1 + (t == 0) * local_lat_t;
-    tmp_U = (origin_U + move * local_lat_zyxcc + local_lat_tzyxcc * 6 +
-             (1 - parity) * lat_tzyxcc);
+    tmp_U = (origin_U + move * local_lat_zyxcc + local_lat_tzyxcc * 3);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -400,7 +392,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     //   move = 1;
     // }
     move = 1 - (t == local_lat_t - 1) * local_lat_t;
-    tmp_U = (origin_U + local_lat_tzyxcc * 6 + parity * lat_tzyxcc);
+    tmp_U = (origin_U + local_lat_tzyxcc * 3);
     for (int i = 0; i < 6; i++) {
       local_U[i] = tmp_U[i];
     }
@@ -442,11 +434,11 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
   int lat_xsc = lat_x * 12;
   int lat_yxsc = lat_y * lat_xsc;
   int lat_zyxsc = lat_z * lat_yxsc;
-  dim3 gridDim(lat_tzyxcc / 9 / BLOCK_SIZE);
-  dim3 blockDim(BLOCK_SIZE);
+  dim3 gridSize(lat_x, lat_y, lat_z);
+  dim3 blockSize(lat_t);
   checkCudaErrors(cudaDeviceSynchronize());
   auto start = std::chrono::high_resolution_clock::now();
-  dslash<<<gridDim, blockDim>>>(
+  dslash<<<gridSize, blockSize>>>(
       gauge, fermion_in, fermion_out, lat_x, lat_y, lat_z, lat_t, lat_xcc,
       lat_yxcc, lat_zyxcc, lat_tzyxcc, lat_xsc, lat_yxsc, lat_zyxsc, parity);
   cudaError_t err = cudaGetLastError();
