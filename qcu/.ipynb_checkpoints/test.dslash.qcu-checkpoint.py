@@ -18,7 +18,11 @@ init()
 Lx, Ly, Lz, Lt = 32, 32, 32, 64
 Nd, Ns, Nc = 4, 4, 3
 latt_size = [Lx, Ly, Lz, Lt]
-
+a=1
+xi_0, nu = 1,1
+coeff_r, coeff_t = 1.00, 1.00
+mass=-3.5
+kappa = 1 / (2*mass*a+8*coeff_r)
 
 def compare(round):
     # generate a vector p randomly
@@ -29,7 +33,9 @@ def compare(round):
     print('===============round ', round, '======================')
 
     # Set parameters in Dslash and use m=-3.5 to make kappa=1
-    dslash = core.getDslash(latt_size, -3.5, 0, 0, anti_periodic_t=False)
+
+    # dslash = core.getDslash(latt_size, -3.5, 0, 0, anti_periodic_t=False)
+    dslash = core.getDslash(latt_size, 0, 1e-9, 1000, xi_0, nu, coeff_t, coeff_r, multigrid=False)
     # Generate gauge and then load it
     U = gauge_utils.gaussGauge(latt_size, round)
     dslash.loadGauge(U)
