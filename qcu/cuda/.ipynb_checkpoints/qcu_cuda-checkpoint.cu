@@ -2291,7 +2291,7 @@ for (int i = 0; i < 9; i++) {
 }
 {
   for (int i = 0; i < 144; i++) {
-    origin_clover_even[i] = clover[i];
+    origin_clover_even[i] = clover[i] * 0.25;
   }
 }
 }
@@ -4074,7 +4074,7 @@ for (int i = 0; i < 9; i++) {
 }
 {
   for (int i = 0; i < 144; i++) {
-    origin_clover_odd[i] = clover[i];
+    origin_clover_odd[i] = clover[i] * 0.25;
   }
 }
 }
