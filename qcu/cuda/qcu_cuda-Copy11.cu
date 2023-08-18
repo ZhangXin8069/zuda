@@ -2459,7 +2459,7 @@ __global__ void give_clover(void *device_propagator, void *device_src,
       ((static_cast<LatticeComplex *>(device_src)) +
        t * lat_z * lat_y * lat_x * 12 + z * lat_y * lat_x * 12 +
        y * lat_x * 12 + x * 12 +
-       (parity * 2 - 1) * lat_t * lat_z * lat_y * lat_x * 12);
+       (parity - 1) * lat_t * lat_z * lat_y * lat_x * 12);
   register LatticeComplex *origin_dest =
       ((static_cast<LatticeComplex *>(device_dest)) +
        t * lat_z * lat_y * lat_x * 12 + z * lat_y * lat_x * 12 +
@@ -2539,23 +2539,23 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
     printf("just clover total time: (without malloc free memcpy) : %.9lf sec\n",
            double(duration) / 1e9);
   }
-  {
-    // give clover
-    checkCudaErrors(cudaDeviceSynchronize());
-    auto start = std::chrono::high_resolution_clock::now();
-    give_clover<<<gridDim, blockDim>>>(propagator, fermion_in, fermion_out,
-                                       lat_x, lat_y, lat_z, lat_t, parity);
-    err = cudaGetLastError();
-    checkCudaErrors(err);
-    checkCudaErrors(cudaDeviceSynchronize());
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
-            .count();
-    printf(
-        "give clover total time: (without malloc free memcpy) : %.9lf sec\n
-        ", double(duration) / 1e9);
-  }
+  // {
+  //   // give clover
+  //   checkCudaErrors(cudaDeviceSynchronize());
+  //   auto start = std::chrono::high_resolution_clock::now();
+  //   give_clover<<<gridDim, blockDim>>>(propagator, fermion_in, fermion_out,
+  //                                      lat_x, lat_y, lat_z, lat_t, parity);
+  //   err = cudaGetLastError();
+  //   checkCudaErrors(err);
+  //   checkCudaErrors(cudaDeviceSynchronize());
+  //   auto end = std::chrono::high_resolution_clock::now();
+  //   auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end
+  //   - start)
+  //                  .count();
+  //   printf("give clover total time: (without malloc free memcpy) : %.9lf
+  //   sec\n",
+  //          double(duration) / 1e9);
+  // }
   {
     // free
     checkCudaErrors(cudaFree(propagator));

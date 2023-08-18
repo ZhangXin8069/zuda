@@ -2552,9 +2552,10 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
     auto duration =
         std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
             .count();
-    printf(
-        "give clover total time: (without malloc free memcpy) : %.9lf sec\n
-        ", double(duration) / 1e9);
+    printf("give clover total time: (without malloc free memcpy) : %.9lf
+           sec\n ",
+           double(duration) /
+           1e9);
   }
   {
     // free
