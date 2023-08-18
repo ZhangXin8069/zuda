@@ -162,26 +162,14 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
   register LatticeComplex U[9];
   register LatticeComplex src[12];
   register LatticeComplex dest[12];
-
-  for (int i = 0; i < 12; i++) {
-    dest[i] = zero;
-  }
-  // mass term and others
-  // for (int s = 0; s < 4; s++)
-  // {
-  //     for (int c = 0; c < 3; c++)
-  //     {
-  //         dest(x, y, z, t, s, c) += src(x, y, z, t, s, c) * 0;
-  //     }
-  // }
-
+  // just wilson(Sum part)
   {
-    // backward x
-    // if (x == 0) {
-    //   move = lat_x - 1;
-    // } else {
-    //   move = -1;
-    // }
+    for (int i = 0; i < 12; i++) {
+      dest[i] = zero;
+    }
+  }
+  {
+    // x-1
     move = (-1 + (x == 0) * lat_x) * (oe == parity);
     tmp_U = (origin_U + move * 9 + (1 - parity) * lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
@@ -210,12 +198,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     }
   }
   {
-    // forward x
-    // if (x == lat_x - 1) {
-    //   move = 1 - lat_x;
-    // } else {
-    //   move = 1;
-    // }
+    // x+1
     move = (1 - (x == lat_x - 1) * lat_x) * (oe != parity);
     tmp_U = (origin_U + parity * lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
@@ -244,12 +227,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     }
   }
   {
-    // backward y
-    // if (y == 0) {
-    //   move = lat_y - 1;
-    // } else {
-    //   move = -1;
-    // }
+    // y-1
     move = -1 + (y == 0) * lat_y;
     tmp_U = (origin_U + move * lat_xcc + lat_tzyxcc * 2 +
              (1 - parity) * lat_tzyxcc);
@@ -279,12 +257,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     }
   }
   {
-    // // forward y
-    // if (y == lat_y - 1) {
-    //   move = 1 - lat_y;
-    // } else {
-    //   move = 1;
-    // }
+    // y+1
     move = 1 - (y == lat_y - 1) * lat_y;
     tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
@@ -313,12 +286,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     }
   }
   {
-    // backward z
-    // if (z == 0) {
-    //   move = lat_z - 1;
-    // } else {
-    //   move = -1;
-    // }
+    // z-1
     move = -1 + (z == 0) * lat_z;
     tmp_U = (origin_U + move * lat_yxcc + lat_tzyxcc * 4 +
              (1 - parity) * lat_tzyxcc);
@@ -348,12 +316,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     }
   }
   {
-    // forward z
-    // if (z == lat_z - 1) {
-    //   move = 1 - lat_z;
-    // } else {
-    //   move = 1;
-    // }
+    // z+1
     move = 1 - (z == lat_z - 1) * lat_z;
     tmp_U = (origin_U + lat_tzyxcc * 4 + parity * lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
@@ -382,12 +345,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     }
   }
   {
-    // backward t
-    // if (t == 0) {
-    //   move = lat_t - 1;
-    // } else {
-    //   move = -1;
-    // }
+    // t-1
     move = -1 + (t == 0) * lat_t;
     tmp_U = (origin_U + move * lat_zyxcc + lat_tzyxcc * 6 +
              (1 - parity) * lat_tzyxcc);
@@ -417,12 +375,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     }
   }
   {
-    // forward t
-    // if (t == lat_t - 1) {
-    //   move = 1 - lat_t;
-    // } else {
-    //   move = 1;
-    // }
+    // t+1
     move = 1 - (t == lat_t - 1) * lat_t;
     tmp_U = (origin_U + lat_tzyxcc * 6 + parity * lat_tzyxcc);
     for (int i = 0; i < 6; i++) {
@@ -472,10 +425,9 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     }
   }
 }
-__global__ void clover(void *device_U, void *device_clover_even,
-                       void *device_clover_odd, int device_lat_x,
+__global__ void clover(void *device_U, void *device_clover, int device_lat_x,
                        const int device_lat_y, const int device_lat_z,
-                       const int device_lat_t) {
+                       const int device_lat_t, const int device_parity) {
   register int parity = blockIdx.x * blockDim.x + threadIdx.x;
   const int lat_x = device_lat_x;
   const int lat_y = device_lat_y;
@@ -502,11 +454,8 @@ __global__ void clover(void *device_U, void *device_clover_even,
   register LatticeComplex *origin_U =
       ((static_cast<LatticeComplex *>(device_U)) + t * lat_zyxcc +
        z * lat_yxcc + y * lat_xcc + x * 9);
-  register LatticeComplex *origin_clover_even =
-      ((static_cast<LatticeComplex *>(device_clover_even)) +
-       t * lat_zyxcc * 16 + z * lat_yxcc * 16 + y * lat_xcc * 16 + x * 144);
-  register LatticeComplex *origin_clover_odd =
-      ((static_cast<LatticeComplex *>(device_clover_odd)) + t * lat_zyxcc * 16 +
+  register LatticeComplex *origin_clover =
+      ((static_cast<LatticeComplex *>(device_clover)) + t * lat_zyxcc * 16 +
        z * lat_yxcc * 16 + y * lat_xcc * 16 + x * 144);
   register LatticeComplex *tmp_U;
   register LatticeComplex tmp1[9];
@@ -514,3578 +463,1984 @@ __global__ void clover(void *device_U, void *device_clover_even,
   register LatticeComplex tmp3[9];
   register LatticeComplex U[9];
   register LatticeComplex clover[144];
-  {{// clover_even
-    parity = 0;
-  for (int i = 0; i < 144; i++) {
-    clover[i] = zero;
-    origin_clover_even[i] = zero;
-  }
-  for (int i = 0; i < 9; i++) {
-    tmp1[i] = zero;
-    tmp2[i] = zero;
-    U[9] = zero;
-  }
-}
-
-{ // XY
- {//// x,y,z,t;x
-  move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-//// x+1,y,z,t;y
-move0 = (1 - (x == lat_x - 1) * lat_x) * (oe != parity);
-tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp2[i] = tmp_U[i];
-}
-tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y+1,z,t;x;dag
-move0 = 1 - (y == lat_y - 1) * lat_y;
-tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp2[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t;y;dag
-move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-for (int i = 0; i < 9; i++) {
-  U[i] += tmp3[i];
-}
-}
-{
-  //// x,y,z,t;y
-  move0 = 0;
-  tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x-1,y+1,z,t;x;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = 1 - (y == lat_y - 1) * lat_y;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_xcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x-1,y,z,t;y;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x-1,y,z,t;x
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x-1,y,z,t;x;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x-1,y-1,z,t;y;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_xcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x-1,y-1,z,t;x
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_xcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y-1,z,t;y
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U =
-      (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y-1,z,t;y;dag
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U =
-      (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y-1,z,t;x
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x+1,y-1,z,t;y
-  move0 = (1 - (x == lat_x - 1) * lat_x) * (oe == parity);
-  move1 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_xcc + lat_tzyxcc * 2 +
-           parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t;x;dag
-  move0 = 0;
-  tmp_U = (origin_U + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      clover[c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[45 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
-      clover[90 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[135 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
-    }
-  }
-}
-}
-{ // XZ
- {//// x,y,z,t;x
-  move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-//// x+1,y,z,t;z
-move0 = (1 - (x == lat_x - 1) * lat_x) * (oe != parity);
-tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp2[i] = tmp_U[i];
-}
-tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z+1,t;x;dag
-move0 = 1 - (z == lat_z - 1) * lat_z;
-tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp2[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t;z;dag
-move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-for (int i = 0; i < 9; i++) {
-  U[i] += tmp3[i];
-}
-}
-{
-  //// x,y,z,t;z
-  move0 = 0;
-  tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x-1,y,z+1,t;x;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = 1 - (z == lat_z - 1) * lat_z;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_yxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x-1,y,z,t;z;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x-1,y,z,t;x
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x-1,y,z,t;x;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x-1,y,z-1,t;z;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_yxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x-1,y,z-1,t;x
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_yxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z-1,t;z
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y,z-1,t;z;dag
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y,z-1,t;x
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x+1,y,z-1,t;z
-  move0 = (1 - (x == lat_x - 1) * lat_x) * (oe == parity);
-  move1 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_yxcc + lat_tzyxcc * 2 +
-           parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t;x;dag
-  move0 = 0;
-  tmp_U = (origin_U + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      clover[9 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-1);
-      clover[36 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj());
-      clover[99 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-1);
-      clover[126 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj());
-    }
-  }
-}
-}
-{ // XT
- {//// x,y,z,t;x
-  move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-//// x+1,y,z,t;t
-move0 = (1 - (x == lat_x - 1) * lat_x) * (oe != parity);
-tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp2[i] = tmp_U[i];
-}
-tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t+1;x;dag
-move0 = 1 - (t == lat_t - 1) * lat_t;
-tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp2[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t;t;dag
-move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-for (int i = 0; i < 9; i++) {
-  U[i] += tmp3[i];
-}
-}
-{
-  //// x,y,z,t;t
-  move0 = 0;
-  tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x-1,y,z,t+1;x;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = 1 - (t == lat_t - 1) * lat_t;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x-1,y,z,t;t;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x-1,y,z,t;x
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x-1,y,z,t;x;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x-1,y,z,t-1;t;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x-1,y,z,t-1;x
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t-1;t
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y,z,t-1;t;dag
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y,z,t-1;x
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x+1,y,z,t-1;t
-  move0 = (1 - (x == lat_x - 1) * lat_x) * (oe == parity);
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_zyxcc + lat_tzyxcc * 2 +
-           parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t;x;dag
-  move0 = 0;
-  tmp_U = (origin_U + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      clover[9 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
-      clover[36 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
-      clover[99 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[126 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-    }
-  }
-}
-}
-{ // YZ
- {//// x,y,z,t;y
-  move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-//// x,y+1,z,t;z
-move0 = 1 - (y == lat_y - 1) * lat_y;
-tmp_U =
-    (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp2[i] = tmp_U[i];
-}
-tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z+1,t;y;dag
-move0 = 1 - (z == lat_z - 1) * lat_z;
-tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp2[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t;z;dag
-move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-for (int i = 0; i < 9; i++) {
-  U[i] += tmp3[i];
-}
-}
-{
-  //// x,y,z,t;z
-  move0 = 0;
-  tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y-1,z+1,t;y;dag
-  move0 = -1 + (y == 0) * lat_y;
-  move1 = 1 - (z == lat_z - 1) * lat_z;
-  tmp_U = (origin_U + move0 * lat_xcc + move1 * lat_yxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y-1,z,t;z;dag
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U =
-      (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y-1,z,t;y
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y-1,z,t;y;dag
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y-1,z-1,t;z;dag
-  move0 = -1 + (y == 0) * lat_y;
-  move1 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_xcc + move1 * lat_yxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y-1,z-1,t;y
-  move0 = -1 + (y == 0) * lat_y;
-  move1 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_xcc + move1 * lat_yxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z-1,t;z
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y,z-1,t;z;dag
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y,z-1,t;y
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y+1,z-1,t;z
-  move0 = 1 - (y == lat_y - 1) * lat_y;
-  move1 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_xcc + move1 * lat_yxcc + lat_tzyxcc * 2 +
-           parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t;y;dag
-  move0 = 0;
-  tmp_U = (origin_U + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      clover[9 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[36 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[99 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[126 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-    }
-  }
-}
-}
-{ // YT
- {//// x,y,z,t;y
-  move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-//// x,y+1,z,t;t
-move0 = 1 - (y == lat_y - 1) * lat_y;
-tmp_U =
-    (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp2[i] = tmp_U[i];
-}
-tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t+1;y;dag
-move0 = 1 - (t == lat_t - 1) * lat_t;
-tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp2[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t;t;dag
-move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-for (int i = 0; i < 9; i++) {
-  U[i] += tmp3[i];
-}
-}
-{
-  //// x,y,z,t;t
-  move0 = 0;
-  tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y-1,z,t+1;y;dag
-  move0 = -1 + (y == 0) * lat_y;
-  move1 = 1 - (t == lat_t - 1) * lat_t;
-  tmp_U =
-      (origin_U + move0 * lat_xcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y-1,z,t;t;dag
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U =
-      (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y-1,z,t;y
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y-1,z,t;y;dag
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y-1,z,t-1;t;dag
-  move0 = -1 + (y == 0) * lat_y;
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U =
-      (origin_U + move0 * lat_xcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y-1,z,t-1;y
-  move0 = -1 + (y == 0) * lat_y;
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U =
-      (origin_U + move0 * lat_xcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t-1;t
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y,z,t-1;t;dag
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y,z,t-1;y
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y+1,z,t-1;t
-  move0 = 1 - (y == lat_y - 1) * lat_y;
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_xcc + move1 * lat_zyxcc + lat_tzyxcc * 2 +
-           parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t;y;dag
-  move0 = 0;
-  tmp_U = (origin_U + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      clover[9 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-1);
-      clover[36 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj());
-      clover[99 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj());
-      clover[126 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-1);
-    }
-  }
-}
-}
-{ // ZT
- {//// x,y,z,t;z
-  move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-//// x,y,z+1,t;t
-move0 = 1 - (z == lat_z - 1) * lat_z;
-tmp_U =
-    (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp2[i] = tmp_U[i];
-}
-tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t+1;z;dag
-move0 = 1 - (t == lat_t - 1) * lat_t;
-tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp2[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t;t;dag
-move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-for (int i = 0; i < 9; i++) {
-  U[i] += tmp3[i];
-}
-}
-{
-  //// x,y,z,t;t
-  move0 = 0;
-  tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y,z-1,t+1;z;dag
-  move0 = -1 + (z == 0) * lat_z;
-  move1 = 1 - (t == lat_t - 1) * lat_t;
-  tmp_U =
-      (origin_U + move0 * lat_yxcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z-1,t;t;dag
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z-1,t;z
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y,z-1,t;z;dag
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y,z-1,t-1;t;dag
-  move0 = -1 + (z == 0) * lat_z;
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U =
-      (origin_U + move0 * lat_yxcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z-1,t-1;z
-  move0 = -1 + (z == 0) * lat_z;
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U =
-      (origin_U + move0 * lat_yxcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t-1;t
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y,z,t-1;t;dag
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y,z,t-1;z
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z+1,t-1;t
-  move0 = 1 - (z == lat_z - 1) * lat_z;
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_yxcc + move1 * lat_zyxcc + lat_tzyxcc * 2 +
-           parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t;z;dag
-  move0 = 0;
-  tmp_U = (origin_U + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      clover[c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
-      clover[45 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[90 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[135 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
-    }
-  }
-}
-}
-{
-  for (int i = 0; i < 144; i++) {
-    origin_clover_even[i] = clover[i] * 0.25;
-  }
-}
-}
-{
+  // sigmaF
   {
-    // clover_odd
-    parity = 1;
+    parity = device_parity;
     for (int i = 0; i < 144; i++) {
       clover[i] = zero;
-      origin_clover_even[i] = zero;
+      origin_clover[i] = zero;
     }
     for (int i = 0; i < 9; i++) {
       tmp1[i] = zero;
       tmp2[i] = zero;
-      U[9] = zero;
+    }
+  }
+  // XY
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] = zero;
+    }
+  }
+  {
+    //// x,y,z,t;x
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x+1,y,z,t;y
+    move0 = (1 - (x == lat_x - 1) * lat_x) * (oe != parity);
+    tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y+1,z,t;x;dag
+    move0 = 1 - (y == lat_y - 1) * lat_y;
+    tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z,t;y;dag
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x,y,z,t;y
+    move0 = 0;
+    tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x-1,y+1,z,t;x;dag
+    move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
+    move1 = 1 - (y == lat_y - 1) * lat_y;
+    tmp_U = (origin_U + move0 * 9 + move1 * lat_xcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x-1,y,z,t;y;dag
+    move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
+    tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x-1,y,z,t;x
+    move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
+    tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x-1,y,z,t;x;dag
+    move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
+    tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x-1,y-1,z,t;y;dag
+    move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
+    move1 = -1 + (y == 0) * lat_y;
+    tmp_U = (origin_U + move0 * 9 + move1 * lat_xcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 +=
+              tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x-1,y-1,z,t;x
+    move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
+    move1 = -1 + (y == 0) * lat_y;
+    tmp_U = (origin_U + move0 * 9 + move1 * lat_xcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y-1,z,t;y
+    move0 = -1 + (y == 0) * lat_y;
+    tmp_U = (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x,y-1,z,t;y;dag
+    move0 = -1 + (y == 0) * lat_y;
+    tmp_U = (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y-1,z,t;x
+    move0 = -1 + (y == 0) * lat_y;
+    tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x+1,y-1,z,t;y
+    move0 = (1 - (x == lat_x - 1) * lat_x) * (oe == parity);
+    move1 = -1 + (y == 0) * lat_y;
+    tmp_U = (origin_U + move0 * 9 + move1 * lat_xcc + lat_tzyxcc * 2 +
+             parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z,t;x;dag
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        clover[c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
+        clover[45 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
+        clover[90 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
+        clover[135 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
+      }
+    }
+  }
+  // XZ
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] = zero;
+    }
+  }
+  {
+    //// x,y,z,t;x
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x+1,y,z,t;z
+    move0 = (1 - (x == lat_x - 1) * lat_x) * (oe != parity);
+    tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z+1,t;x;dag
+    move0 = 1 - (z == lat_z - 1) * lat_z;
+    tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z,t;z;dag
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x,y,z,t;z
+    move0 = 0;
+    tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x-1,y,z+1,t;x;dag
+    move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
+    move1 = 1 - (z == lat_z - 1) * lat_z;
+    tmp_U = (origin_U + move0 * 9 + move1 * lat_yxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x-1,y,z,t;z;dag
+    move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
+    tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x-1,y,z,t;x
+    move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
+    tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x-1,y,z,t;x;dag
+    move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
+    tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x-1,y,z-1,t;z;dag
+    move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
+    move1 = -1 + (z == 0) * lat_z;
+    tmp_U = (origin_U + move0 * 9 + move1 * lat_yxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 +=
+              tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x-1,y,z-1,t;x
+    move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
+    move1 = -1 + (z == 0) * lat_z;
+    tmp_U = (origin_U + move0 * 9 + move1 * lat_yxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z-1,t;z
+    move0 = -1 + (z == 0) * lat_z;
+    tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x,y,z-1,t;z;dag
+    move0 = -1 + (z == 0) * lat_z;
+    tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y,z-1,t;x
+    move0 = -1 + (z == 0) * lat_z;
+    tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x+1,y,z-1,t;z
+    move0 = (1 - (x == lat_x - 1) * lat_x) * (oe == parity);
+    move1 = -1 + (z == 0) * lat_z;
+    tmp_U = (origin_U + move0 * 9 + move1 * lat_yxcc + lat_tzyxcc * 2 +
+             parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z,t;x;dag
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        clover[9 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-1);
+        clover[36 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj());
+        clover[99 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-1);
+        clover[126 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj());
+      }
+    }
+  }
+  // XT
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] = zero;
+    }
+  }
+  {
+    //// x,y,z,t;x
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x+1,y,z,t;t
+    move0 = (1 - (x == lat_x - 1) * lat_x) * (oe != parity);
+    tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z,t+1;x;dag
+    move0 = 1 - (t == lat_t - 1) * lat_t;
+    tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z,t;t;dag
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x,y,z,t;t
+    move0 = 0;
+    tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x-1,y,z,t+1;x;dag
+    move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
+    move1 = 1 - (t == lat_t - 1) * lat_t;
+    tmp_U = (origin_U + move0 * 9 + move1 * lat_zyxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x-1,y,z,t;t;dag
+    move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
+    tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x-1,y,z,t;x
+    move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
+    tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x-1,y,z,t;x;dag
+    move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
+    tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x-1,y,z,t-1;t;dag
+    move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
+    move1 = -1 + (t == 0) * lat_t;
+    tmp_U = (origin_U + move0 * 9 + move1 * lat_zyxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 +=
+              tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x-1,y,z,t-1;x
+    move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
+    move1 = -1 + (t == 0) * lat_t;
+    tmp_U = (origin_U + move0 * 9 + move1 * lat_zyxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z,t-1;t
+    move0 = -1 + (t == 0) * lat_t;
+    tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x,y,z,t-1;t;dag
+    move0 = -1 + (t == 0) * lat_t;
+    tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y,z,t-1;x
+    move0 = -1 + (t == 0) * lat_t;
+    tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x+1,y,z,t-1;t
+    move0 = (1 - (x == lat_x - 1) * lat_x) * (oe == parity);
+    move1 = -1 + (t == 0) * lat_t;
+    tmp_U = (origin_U + move0 * 9 + move1 * lat_zyxcc + lat_tzyxcc * 2 +
+             parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z,t;x;dag
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        clover[9 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
+        clover[36 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
+        clover[99 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
+        clover[126 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
+      }
+    }
+  }
+  // YZ
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] = zero;
+    }
+  }
+  {
+    //// x,y,z,t;y
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y+1,z,t;z
+    move0 = 1 - (y == lat_y - 1) * lat_y;
+    tmp_U = (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z+1,t;y;dag
+    move0 = 1 - (z == lat_z - 1) * lat_z;
+    tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z,t;z;dag
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x,y,z,t;z
+    move0 = 0;
+    tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y-1,z+1,t;y;dag
+    move0 = -1 + (y == 0) * lat_y;
+    move1 = 1 - (z == lat_z - 1) * lat_z;
+    tmp_U =
+        (origin_U + move0 * lat_xcc + move1 * lat_yxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y-1,z,t;z;dag
+    move0 = -1 + (y == 0) * lat_y;
+    tmp_U = (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y-1,z,t;y
+    move0 = -1 + (y == 0) * lat_y;
+    tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x,y-1,z,t;y;dag
+    move0 = -1 + (y == 0) * lat_y;
+    tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y-1,z-1,t;z;dag
+    move0 = -1 + (y == 0) * lat_y;
+    move1 = -1 + (z == 0) * lat_z;
+    tmp_U =
+        (origin_U + move0 * lat_xcc + move1 * lat_yxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 +=
+              tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y-1,z-1,t;y
+    move0 = -1 + (y == 0) * lat_y;
+    move1 = -1 + (z == 0) * lat_z;
+    tmp_U =
+        (origin_U + move0 * lat_xcc + move1 * lat_yxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z-1,t;z
+    move0 = -1 + (z == 0) * lat_z;
+    tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x,y,z-1,t;z;dag
+    move0 = -1 + (z == 0) * lat_z;
+    tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y,z-1,t;y
+    move0 = -1 + (z == 0) * lat_z;
+    tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y+1,z-1,t;z
+    move0 = 1 - (y == lat_y - 1) * lat_y;
+    move1 = -1 + (z == 0) * lat_z;
+    tmp_U = (origin_U + move0 * lat_xcc + move1 * lat_yxcc + lat_tzyxcc * 2 +
+             parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z,t;y;dag
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        clover[9 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
+        clover[36 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
+        clover[99 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
+        clover[126 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
+      }
+    }
+  }
+  // YT
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] = zero;
+    }
+  }
+  {
+    //// x,y,z,t;y
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y+1,z,t;t
+    move0 = 1 - (y == lat_y - 1) * lat_y;
+    tmp_U = (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z,t+1;y;dag
+    move0 = 1 - (t == lat_t - 1) * lat_t;
+    tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z,t;t;dag
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x,y,z,t;t
+    move0 = 0;
+    tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y-1,z,t+1;y;dag
+    move0 = -1 + (y == 0) * lat_y;
+    move1 = 1 - (t == lat_t - 1) * lat_t;
+    tmp_U =
+        (origin_U + move0 * lat_xcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y-1,z,t;t;dag
+    move0 = -1 + (y == 0) * lat_y;
+    tmp_U = (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y-1,z,t;y
+    move0 = -1 + (y == 0) * lat_y;
+    tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x,y-1,z,t;y;dag
+    move0 = -1 + (y == 0) * lat_y;
+    tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y-1,z,t-1;t;dag
+    move0 = -1 + (y == 0) * lat_y;
+    move1 = -1 + (t == 0) * lat_t;
+    tmp_U =
+        (origin_U + move0 * lat_xcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 +=
+              tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y-1,z,t-1;y
+    move0 = -1 + (y == 0) * lat_y;
+    move1 = -1 + (t == 0) * lat_t;
+    tmp_U =
+        (origin_U + move0 * lat_xcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z,t-1;t
+    move0 = -1 + (t == 0) * lat_t;
+    tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    //// x,y,z,t-1;t;dag
+    move0 = -1 + (t == 0) * lat_t;
+    tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y,z,t-1;y
+    move0 = -1 + (t == 0) * lat_t;
+    tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y+1,z,t-1;t
+    move0 = 1 - (y == lat_y - 1) * lat_y;
+    move1 = -1 + (t == 0) * lat_t;
+    tmp_U = (origin_U + move0 * lat_xcc + move1 * lat_zyxcc + lat_tzyxcc * 2 +
+             parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    //// x,y,z,t;y;dag
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
+      }
+    }
+  }
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
+  }
+  {
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        clover[9 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-1);
+        clover[36 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj());
+        clover[99 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj());
+        clover[126 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-1);
+      }
     }
   }
 
-  { // XY
-   {//// x,y,z,t;x
+  // ZT
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] = zero;
+    }
+  }
+  {
+    //// x,y,z,t;z
     move0 = 0;
-  tmp_U = (origin_U + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x+1,y,z,t;y
-  move0 = (1 - (x == lat_x - 1) * lat_x) * (oe != parity);
-  tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y,z+1,t;t
+    move0 = 1 - (z == lat_z - 1) * lat_z;
+    tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
       }
-      tmp3[c0 * 3 + c1] = tmp0;
     }
   }
-  //// x,y+1,z,t;x;dag
-  move0 = 1 - (y == lat_y - 1) * lat_y;
-  tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+  {
+    //// x,y,z,t+1;z;dag
+    move0 = 1 - (t == lat_t - 1) * lat_t;
+    tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
       }
-      tmp2[c0 * 3 + c1] = tmp0;
     }
   }
-  //// x,y,z,t;y;dag
-  move0 = 0;
-  tmp_U = (origin_U + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+  {
+    //// x,y,z,t;t;dag
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
       }
-      tmp3[c0 * 3 + c1] = tmp0;
     }
   }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
   }
-}
-{
-  //// x,y,z,t;y
-  move0 = 0;
-  tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x-1,y+1,z,t;x;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = 1 - (y == lat_y - 1) * lat_y;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_xcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
+  {
+    //// x,y,z,t;t
+    move0 = 0;
+    tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y,z-1,t+1;z;dag
+    move0 = -1 + (z == 0) * lat_z;
+    move1 = 1 - (t == lat_t - 1) * lat_t;
+    tmp_U =
+        (origin_U + move0 * lat_yxcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
       }
-      tmp3[c0 * 3 + c1] = tmp0;
     }
   }
-  //// x-1,y,z,t;y;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+  {
+    //// x,y,z-1,t;t;dag
+    move0 = -1 + (z == 0) * lat_z;
+    tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
       }
-      tmp2[c0 * 3 + c1] = tmp0;
     }
   }
-  //// x-1,y,z,t;x
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+  {
+    //// x,y,z-1,t;z
+    move0 = -1 + (z == 0) * lat_z;
+    tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
       }
-      tmp3[c0 * 3 + c1] = tmp0;
     }
   }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
+    }
   }
-}
-{
-  //// x-1,y,z,t;x;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x-1,y-1,z,t;y;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_xcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
+  {
+    //// x,y,z-1,t;z;dag
+    move0 = -1 + (z == 0) * lat_z;
+    tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y,z-1,t-1;t;dag
+    move0 = -1 + (z == 0) * lat_z;
+    move1 = -1 + (t == 0) * lat_t;
+    tmp_U =
+        (origin_U + move0 * lat_yxcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 +=
+              tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
       }
-      tmp3[c0 * 3 + c1] = tmp0;
     }
   }
-  //// x-1,y-1,z,t;x
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_xcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+  {
+    //// x,y,z-1,t-1;z
+    move0 = -1 + (z == 0) * lat_z;
+    move1 = -1 + (t == 0) * lat_t;
+    tmp_U =
+        (origin_U + move0 * lat_yxcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
       }
-      tmp2[c0 * 3 + c1] = tmp0;
     }
   }
-  //// x,y-1,z,t;y
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U =
-      (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+  {
+    //// x,y,z,t-1;t
+    move0 = -1 + (t == 0) * lat_t;
+    tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
       }
-      tmp3[c0 * 3 + c1] = tmp0;
+    }
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
     }
   }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y-1,z,t;y;dag
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U =
-      (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y-1,z,t;x
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
+  {
+    //// x,y,z,t-1;t;dag
+    move0 = -1 + (t == 0) * lat_t;
+    tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
+             (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    //// x,y,z,t-1;z
+    move0 = -1 + (t == 0) * lat_t;
+    tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp2[i] = tmp_U[i];
+    }
+    tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
+    tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
+    tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
       }
-      tmp3[c0 * 3 + c1] = tmp0;
     }
   }
-  //// x+1,y-1,z,t;y
-  move0 = (1 - (x == lat_x - 1) * lat_x) * (oe == parity);
-  move1 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_xcc + lat_tzyxcc * 2 +
-           parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+  {
+    //// x,y,z+1,t-1;t
+    move0 = 1 - (z == lat_z - 1) * lat_z;
+    move1 = -1 + (t == 0) * lat_t;
+    tmp_U = (origin_U + move0 * lat_yxcc + move1 * lat_zyxcc + lat_tzyxcc * 2 +
+             parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
+        }
+        tmp2[c0 * 3 + c1] = tmp0;
       }
-      tmp2[c0 * 3 + c1] = tmp0;
     }
   }
-  //// x,y,z,t;x;dag
-  move0 = 0;
-  tmp_U = (origin_U + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+  {
+    //// x,y,z,t;z;dag
+    move0 = 0;
+    tmp_U = (origin_U + parity * lat_tzyxcc);
+    for (int i = 0; i < 6; i++) {
+      tmp1[i] = tmp_U[i];
+    }
+    tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
+    tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
+    tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        tmp0 = zero;
+        for (int cc = 0; cc < 3; cc++) {
+          tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
+        }
+        tmp3[c0 * 3 + c1] = tmp0;
       }
-      tmp3[c0 * 3 + c1] = tmp0;
     }
   }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      clover[c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[45 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
-      clover[90 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[135 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
+  {
+    for (int i = 0; i < 9; i++) {
+      U[i] += tmp3[i];
     }
   }
-}
-}
-{ // XZ
- {//// x,y,z,t;x
-  move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-//// x+1,y,z,t;z
-move0 = (1 - (x == lat_x - 1) * lat_x) * (oe != parity);
-tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp2[i] = tmp_U[i];
-}
-tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z+1,t;x;dag
-move0 = 1 - (z == lat_z - 1) * lat_z;
-tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp2[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t;z;dag
-move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-for (int i = 0; i < 9; i++) {
-  U[i] += tmp3[i];
-}
-}
-{
-  //// x,y,z,t;z
-  move0 = 0;
-  tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x-1,y,z+1,t;x;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = 1 - (z == lat_z - 1) * lat_z;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_yxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
+  {
+    for (int c0 = 0; c0 < 3; c0++) {
+      for (int c1 = 0; c1 < 3; c1++) {
+        clover[c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
+        clover[45 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
+        clover[90 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
+        clover[135 + c0 * 3 + c1] =
+            (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
       }
-      tmp3[c0 * 3 + c1] = tmp0;
     }
   }
-  //// x-1,y,z,t;z;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x-1,y,z,t;x
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x-1,y,z,t;x;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x-1,y,z-1,t;z;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_yxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x-1,y,z-1,t;x
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_yxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z-1,t;z
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y,z-1,t;z;dag
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y,z-1,t;x
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x+1,y,z-1,t;z
-  move0 = (1 - (x == lat_x - 1) * lat_x) * (oe == parity);
-  move1 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_yxcc + lat_tzyxcc * 2 +
-           parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t;x;dag
-  move0 = 0;
-  tmp_U = (origin_U + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      clover[9 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-1);
-      clover[36 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj());
-      clover[99 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-1);
-      clover[126 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj());
+  {
+    for (int i = 0; i < 144; i++) {
+      origin_clover[i] = clover[i] * 0.25;
     }
   }
 }
-}
-{ // XT
- {//// x,y,z,t;x
-  move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-//// x+1,y,z,t;t
-move0 = (1 - (x == lat_x - 1) * lat_x) * (oe != parity);
-tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp2[i] = tmp_U[i];
-}
-tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t+1;x;dag
-move0 = 1 - (t == lat_t - 1) * lat_t;
-tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp2[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t;t;dag
-move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-for (int i = 0; i < 9; i++) {
-  U[i] += tmp3[i];
-}
-}
-{
-  //// x,y,z,t;t
-  move0 = 0;
-  tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x-1,y,z,t+1;x;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = 1 - (t == lat_t - 1) * lat_t;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x-1,y,z,t;t;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x-1,y,z,t;x
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x-1,y,z,t;x;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe == parity);
-  tmp_U = (origin_U + move0 * 9 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x-1,y,z,t-1;t;dag
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x-1,y,z,t-1;x
-  move0 = (-1 + (x == 0) * lat_x) * (oe != parity);
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t-1;t
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y,z,t-1;t;dag
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y,z,t-1;x
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x+1,y,z,t-1;t
-  move0 = (1 - (x == lat_x - 1) * lat_x) * (oe == parity);
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * 9 + move1 * lat_zyxcc + lat_tzyxcc * 2 +
-           parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t;x;dag
-  move0 = 0;
-  tmp_U = (origin_U + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      clover[9 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
-      clover[36 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
-      clover[99 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[126 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-    }
-  }
-}
-}
-{ // YZ
- {//// x,y,z,t;y
-  move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-//// x,y+1,z,t;z
-move0 = 1 - (y == lat_y - 1) * lat_y;
-tmp_U =
-    (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp2[i] = tmp_U[i];
-}
-tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z+1,t;y;dag
-move0 = 1 - (z == lat_z - 1) * lat_z;
-tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp2[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t;z;dag
-move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-for (int i = 0; i < 9; i++) {
-  U[i] += tmp3[i];
-}
-}
-{
-  //// x,y,z,t;z
-  move0 = 0;
-  tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y-1,z+1,t;y;dag
-  move0 = -1 + (y == 0) * lat_y;
-  move1 = 1 - (z == lat_z - 1) * lat_z;
-  tmp_U = (origin_U + move0 * lat_xcc + move1 * lat_yxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y-1,z,t;z;dag
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U =
-      (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y-1,z,t;y
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y-1,z,t;y;dag
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y-1,z-1,t;z;dag
-  move0 = -1 + (y == 0) * lat_y;
-  move1 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_xcc + move1 * lat_yxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y-1,z-1,t;y
-  move0 = -1 + (y == 0) * lat_y;
-  move1 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_xcc + move1 * lat_yxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z-1,t;z
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y,z-1,t;z;dag
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y,z-1,t;y
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y+1,z-1,t;z
-  move0 = 1 - (y == lat_y - 1) * lat_y;
-  move1 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_xcc + move1 * lat_yxcc + lat_tzyxcc * 2 +
-           parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t;y;dag
-  move0 = 0;
-  tmp_U = (origin_U + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      clover[9 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[36 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[99 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[126 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-    }
-  }
-}
-}
-{ // YT
- {//// x,y,z,t;y
-  move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-//// x,y+1,z,t;t
-move0 = 1 - (y == lat_y - 1) * lat_y;
-tmp_U =
-    (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp2[i] = tmp_U[i];
-}
-tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t+1;y;dag
-move0 = 1 - (t == lat_t - 1) * lat_t;
-tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp2[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t;t;dag
-move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-for (int i = 0; i < 9; i++) {
-  U[i] += tmp3[i];
-}
-}
-{
-  //// x,y,z,t;t
-  move0 = 0;
-  tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y-1,z,t+1;y;dag
-  move0 = -1 + (y == 0) * lat_y;
-  move1 = 1 - (t == lat_t - 1) * lat_t;
-  tmp_U =
-      (origin_U + move0 * lat_xcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y-1,z,t;t;dag
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U =
-      (origin_U + move0 * lat_xcc + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y-1,z,t;y
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y-1,z,t;y;dag
-  move0 = -1 + (y == 0) * lat_y;
-  tmp_U = (origin_U + move0 * lat_xcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y-1,z,t-1;t;dag
-  move0 = -1 + (y == 0) * lat_y;
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U =
-      (origin_U + move0 * lat_xcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y-1,z,t-1;y
-  move0 = -1 + (y == 0) * lat_y;
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U =
-      (origin_U + move0 * lat_xcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t-1;t
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y,z,t-1;t;dag
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y,z,t-1;y
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y+1,z,t-1;t
-  move0 = 1 - (y == lat_y - 1) * lat_y;
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_xcc + move1 * lat_zyxcc + lat_tzyxcc * 2 +
-           parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t;y;dag
-  move0 = 0;
-  tmp_U = (origin_U + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      clover[9 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-1);
-      clover[36 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj());
-      clover[99 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj());
-      clover[126 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-1);
-    }
-  }
-}
-}
-{ // ZT
- {//// x,y,z,t;z
-  move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-//// x,y,z+1,t;t
-move0 = 1 - (z == lat_z - 1) * lat_z;
-tmp_U =
-    (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp2[i] = tmp_U[i];
-}
-tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t+1;z;dag
-move0 = 1 - (t == lat_t - 1) * lat_t;
-tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp2[c0 * 3 + c1] = tmp0;
-  }
-}
-//// x,y,z,t;t;dag
-move0 = 0;
-tmp_U = (origin_U + parity * lat_tzyxcc);
-for (int i = 0; i < 6; i++) {
-  tmp1[i] = tmp_U[i];
-}
-tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-for (int c0 = 0; c0 < 3; c0++) {
-  for (int c1 = 0; c1 < 3; c1++) {
-    tmp0 = zero;
-    for (int cc = 0; cc < 3; cc++) {
-      tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-    }
-    tmp3[c0 * 3 + c1] = tmp0;
-  }
-}
-for (int i = 0; i < 9; i++) {
-  U[i] += tmp3[i];
-}
-}
-{
-  //// x,y,z,t;t
-  move0 = 0;
-  tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y,z-1,t+1;z;dag
-  move0 = -1 + (z == 0) * lat_z;
-  move1 = 1 - (t == lat_t - 1) * lat_t;
-  tmp_U =
-      (origin_U + move0 * lat_yxcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z-1,t;t;dag
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z-1,t;z
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y,z-1,t;z;dag
-  move0 = -1 + (z == 0) * lat_z;
-  tmp_U = (origin_U + move0 * lat_yxcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y,z-1,t-1;t;dag
-  move0 = -1 + (z == 0) * lat_z;
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U =
-      (origin_U + move0 * lat_yxcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj(); // dag;dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z-1,t-1;z
-  move0 = -1 + (z == 0) * lat_z;
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U =
-      (origin_U + move0 * lat_yxcc + move1 * lat_zyxcc + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t-1;t
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  //// x,y,z,t-1;t;dag
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + lat_tzyxcc * 2 +
-           (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  //// x,y,z,t-1;z
-  move0 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_zyxcc + (1 - parity) * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp2[i] = tmp_U[i];
-  }
-  tmp2[6] = (tmp2[1] * tmp2[5] - tmp2[2] * tmp2[4]).conj();
-  tmp2[7] = (tmp2[2] * tmp2[3] - tmp2[0] * tmp2[5]).conj();
-  tmp2[8] = (tmp2[0] * tmp2[4] - tmp2[1] * tmp2[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1]; // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z+1,t-1;t
-  move0 = 1 - (z == lat_z - 1) * lat_z;
-  move1 = -1 + (t == 0) * lat_t;
-  tmp_U = (origin_U + move0 * lat_yxcc + move1 * lat_zyxcc + lat_tzyxcc * 2 +
-           parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp3[c0 * 3 + cc] * tmp1[cc * 3 + c1];
-      }
-      tmp2[c0 * 3 + c1] = tmp0;
-    }
-  }
-  //// x,y,z,t;z;dag
-  move0 = 0;
-  tmp_U = (origin_U + parity * lat_tzyxcc);
-  for (int i = 0; i < 6; i++) {
-    tmp1[i] = tmp_U[i];
-  }
-  tmp1[6] = (tmp1[1] * tmp1[5] - tmp1[2] * tmp1[4]).conj();
-  tmp1[7] = (tmp1[2] * tmp1[3] - tmp1[0] * tmp1[5]).conj();
-  tmp1[8] = (tmp1[0] * tmp1[4] - tmp1[1] * tmp1[3]).conj();
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      tmp0 = zero;
-      for (int cc = 0; cc < 3; cc++) {
-        tmp0 += tmp2[c0 * 3 + cc] * tmp1[c1 * 3 + cc].conj(); // dag
-      }
-      tmp3[c0 * 3 + c1] = tmp0;
-    }
-  }
-  for (int i = 0; i < 9; i++) {
-    U[i] += tmp3[i];
-  }
-}
-{
-  for (int c0 = 0; c0 < 3; c0++) {
-    for (int c1 = 0; c1 < 3; c1++) {
-      clover[c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
-      clover[45 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[90 + c0 * 3 + c1] =
-          (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * (-I);
-      clover[135 + c0 * 3 + c1] = (U[c0 * 3 + c1] - U[c1 * 3 + c0].conj()) * I;
-    }
-  }
-}
-}
-{
-  for (int i = 0; i < 144; i++) {
-    origin_clover_odd[i] = clover[i] * 0.25;
-  }
-}
-}
-}
-__global__ void give_clover(void *device_propagator, void *device_dest,
-                            int device_lat_x, const int device_lat_y,
-                            const int device_lat_z, const int device_lat_t) {
+__global__ void give_clover(void *device_propagator, void *device_src,
+                            void *device_dest, int device_lat_x,
+                            const int device_lat_y, const int device_lat_z,
+                            const int device_lat_t, const int device_parity) {
   const int lat_x = device_lat_x;
   const int lat_y = device_lat_y;
   const int lat_z = device_lat_z;
+  const int lat_t = device_lat_t;
+  const int parity = device_parity;
   register LatticeComplex zero(0.0, 0.0);
+  register LatticeComplex I(0.0, 1.0);
   register LatticeComplex tmp0(0.0, 0.0);
   register int tmp1;
   register int tmp2 = blockIdx.x * blockDim.x + threadIdx.x;
@@ -4101,29 +2456,42 @@ __global__ void give_clover(void *device_propagator, void *device_dest,
       ((static_cast<LatticeComplex *>(device_propagator)) +
        t * lat_z * lat_y * lat_x * 144 + z * lat_y * lat_x * 144 +
        y * lat_x * 144 + x * 144);
+  register LatticeComplex *origin_src =
+      ((static_cast<LatticeComplex *>(device_src)) +
+       t * lat_z * lat_y * lat_x * 12 + z * lat_y * lat_x * 12 +
+       y * lat_x * 12 + x * 12 +
+       (parity - 1) * lat_t * lat_z * lat_y * lat_x * 12);
   register LatticeComplex *origin_dest =
       ((static_cast<LatticeComplex *>(device_dest)) +
        t * lat_z * lat_y * lat_x * 12 + z * lat_y * lat_x * 12 +
        y * lat_x * 12 + x * 12);
   register LatticeComplex propagator[144];
+  register LatticeComplex src[12];
   register LatticeComplex dest[12];
   register LatticeComplex tmp[12];
-  for (int i = 0; i < 144; i++) {
-    propagator[i] = origin_propagator[i];
-  }
-  for (int i = 0; i < 12; i++) {
-    dest[i] = origin_dest[i];
-    tmp[i] = zero;
-  }
-  for (int sc0 = 0; sc0 < 12; sc0++) {
-    tmp0 = zero;
-    for (int sc1 = 0; sc1 < 12; sc1++) {
-      tmp0 += propagator[sc0 * 12 + sc1] * dest[sc1];
+  {
+    for (int i = 0; i < 144; i++) {
+      propagator[i] = origin_propagator[i];
     }
-    tmp[sc0] = tmp0;
+    for (int i = 0; i < 12; i++) {
+      src[i] = origin_src[i];
+      dest[i] = origin_dest[i];
+      tmp[i] = zero;
+    }
   }
-  for (int i = 0; i < 12; i++) {
-    origin_dest[i] = tmp[i];
+  {
+    for (int sc0 = 0; sc0 < 12; sc0++) {
+      tmp0 = zero;
+      for (int sc1 = 0; sc1 < 12; sc1++) {
+        tmp0 += propagator[sc0 * 12 + sc1] * src[sc1];
+      }
+      tmp[sc0] = tmp0;
+    }
+  }
+  {
+    for (int i = 0; i < 12; i++) {
+      origin_dest[i] = src[i] - dest[i] - tmp[i] * 0.25 * I;
+    }
   }
 }
 
@@ -4135,7 +2503,7 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
   int lat_t = param->lattice_size[3];
   dim3 gridDim(lat_x * lat_y * lat_z * lat_t / BLOCK_SIZE);
   dim3 blockDim(BLOCK_SIZE);
-
+  // wilson dslash
   checkCudaErrors(cudaDeviceSynchronize());
   auto start = std::chrono::high_resolution_clock::now();
   dslash<<<gridDim, blockDim>>>(gauge, fermion_in, fermion_out, lat_x, lat_y,
@@ -4148,20 +2516,15 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
       std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
   printf("wilson dslash total time: (without malloc free memcpy) : %.9lf sec\n",
          double(duration) / 1e9);
-
-  void *propagator_even;
-  void *propagator_odd;
+  // just clover
   void *propagator;
   checkCudaErrors(
-      cudaMalloc(&propagator_even, (lat_t * lat_z * lat_y * lat_x * 144) *
-                                       sizeof(LatticeComplex)));
-  checkCudaErrors(
-      cudaMalloc(&propagator_odd, (lat_t * lat_z * lat_y * lat_x * 144) *
-                                      sizeof(LatticeComplex)));
+      cudaMalloc(&propagator, (lat_t * lat_z * lat_y * lat_x * 144) *
+                                  sizeof(LatticeComplex)));
   checkCudaErrors(cudaDeviceSynchronize());
   start = std::chrono::high_resolution_clock::now();
-  clover<<<gridDim, blockDim>>>(gauge, propagator_even, propagator_odd, lat_x,
-                                lat_y, lat_z, lat_t);
+  clover<<<gridDim, blockDim>>>(gauge, propagator, lat_x, lat_y, lat_z, lat_t,
+                                parity);
   err = cudaGetLastError();
   checkCudaErrors(err);
   checkCudaErrors(cudaDeviceSynchronize());
@@ -4170,15 +2533,11 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
       std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
   printf("just clover total time: (without malloc free memcpy) : %.9lf sec\n",
          double(duration) / 1e9);
-  if (parity) {
-    propagator = propagator_odd;
-  } else {
-    propagator = propagator_even;
-  }
+  // give clover
   checkCudaErrors(cudaDeviceSynchronize());
   start = std::chrono::high_resolution_clock::now();
-  give_clover<<<gridDim, blockDim>>>(propagator, fermion_out, lat_x, lat_y,
-                                     lat_z, lat_t);
+  give_clover<<<gridDim, blockDim>>>(propagator, fermion_in, fermion_out, lat_x,
+                                     lat_y, lat_z, lat_t, parity);
   err = cudaGetLastError();
   checkCudaErrors(err);
   checkCudaErrors(cudaDeviceSynchronize());
@@ -4187,7 +2546,6 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
       std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
   printf("give clover total time: (without malloc free memcpy) : %.9lf sec\n",
          double(duration) / 1e9);
-
-  checkCudaErrors(cudaFree(propagator_even));
-  checkCudaErrors(cudaFree(propagator_odd));
+  // free
+  checkCudaErrors(cudaFree(propagator));
 }

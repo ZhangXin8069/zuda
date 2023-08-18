@@ -1,4 +1,4 @@
-tunecache	1.1.0	1.1.0--sm_70	cpu_arch=x86_64,gpu_arch=sm_70,cuda_version=11.6.124	# Last updated Thu Aug 17 23:24:54 2023
+tunecache	1.1.0	1.1.0--sm_70	cpu_arch=x86_64,gpu_arch=sm_70,cuda_version=11.6.124	# Last updated Fri Aug 18 11:29:39 2023
 
           volume	name	aux	block.x	block.y	block.z	grid.x	grid.y	grid.z	shared_bytes	aux.x	aux.y	aux.z	aux.w	time	comment
      16x16x16x32	N4quda10GaugeGaussIdLi3EL21QudaReconstructType_s12EEE	GPU-offline,vol=131072stride=69632precision=8geometry=4Nc=3,lie_group	64	2	1	1024	1	1	0	-1	-1	-1	-1	0.000333429	# 0.00 Gflop/s, 160.39 GB/s, tuning took 0.520485 seconds at Tue Aug  8 20:13:17 2023

@@ -35,7 +35,7 @@ def compare(round):
     # Set parameters in Dslash and use m=-3.5 to make kappa=1
 
     # dslash = core.getDslash(latt_size, -3.5, 0, 0, anti_periodic_t=False)
-    dslash = core.getDslash(latt_size, 0, 1e-9, 1000, xi_0, nu, coeff_t, coeff_r, multigrid=False)
+    dslash = core.getDslash(latt_size, mass, 1e-9, 1000, xi_0, nu, coeff_t, coeff_r, multigrid=False)
     # Generate gauge and then load it
     U = gauge_utils.gaussGauge(latt_size, round)
     dslash.loadGauge(U)
@@ -58,8 +58,9 @@ def compare(round):
     pyqcu.dslashQcu(Mp1.odd_ptr, p.even_ptr, U.data_ptr, param, 1)
     cp.cuda.runtime.deviceSynchronize()
     t2 = perf_counter()
+    print("######Mp[0,0,0,1]:\n",Mp.lexico()[0,0,0,1])
+    print("######Mp1[0,0,0,1]:\n",Mp1.lexico()[0,0,0,1])
     print(f'QCU dslash: {t2 - t1} sec')
-
     print('difference: ', cp.linalg.norm(Mp1.data - Mp.data) / cp.linalg.norm(Mp.data))
 
 
