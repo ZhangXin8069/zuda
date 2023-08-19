@@ -2444,7 +2444,7 @@ __global__ void clover(void *device_U, void *device_clover, int device_lat_x,
   }
   {
     for (int i = 0; i < 144; i++) {
-      origin_clover[i] = clover[i] * 2;
+      origin_clover[i] = clover[i] * 0.25;
     }
   }
 }
@@ -2508,12 +2508,7 @@ __global__ void give_clover(void *device_propagator, void *device_src,
   }
   {
     for (int i = 0; i < 12; i++) {
-      dest[i] = src[i] - dest[i] - tmp[i] * 0.125 * I;
-    }
-  }
-  {
-    for (int i = 0; i < 12; i++) {
-      origin_dest[i] = dest[i];
+      origin_dest[i] = src[i] - dest[i] - tmp[i] * 0.25 * I;
     }
   }
 }
@@ -2576,8 +2571,9 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
     auto duration =
         std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
             .count();
-    printf("give clover total time: (without malloc free memcpy) : %.9lf sec\n",
-           double(duration) / 1e9);
+    printf(
+        "give clover total time: (without malloc free memcpy) : %.9lf sec\n
+        ", double(duration) / 1e9);
   }
   {
     // free

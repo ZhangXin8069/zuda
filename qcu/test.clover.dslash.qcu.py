@@ -20,9 +20,9 @@ Nd, Ns, Nc = 4, 4, 3
 latt_size = [Lx, Ly, Lz, Lt]
 a=1
 xi_0, nu = 1,1
-coeff_r, coeff_t = 1.00, 1.00
+coeff_r, coeff_t = 1, 1
 mass=-3.5
-kappa = 1 / (2*mass*a+8*coeff_r)
+# kappa = 1 / (2*mass+8)
 
 def compare(round):
     # generate a vector p randomly
@@ -31,6 +31,7 @@ def compare(round):
     Mp1 = LatticeFermion(latt_size)
 
     print('===============round ', round, '======================')
+    print("######p[0,0,0,1]:\n",p.lexico()[0,0,0,1])
 
     # Set parameters in Dslash and use m=-3.5 to make kappa=1
 
