@@ -13,7 +13,7 @@ from pyquda.field import LatticeFermion
 from pyquda.utils import gauge_utils
 
 os.environ["QUDA_RESOURCE_PATH"] = ".cache"
-init()
+init(1,1,1,1)
 
 Lx, Ly, Lz, Lt = 32, 32, 32, 64
 Nd, Ns, Nc = 4, 4, 3

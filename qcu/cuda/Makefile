@@ -1,8 +1,8 @@
 TARGET:=libqcu.so
 LIB:=libqcu.so
-INCLUDE:=${HOME}/external-libraries/pyquda/include/qcu
+INCLUDE:=${HOME}/external-libraries/PyQuda-master/pyquda/include/qcu
 SRC:=qcu_cuda.cu
-FLAGS:=-arch=sm_70 -O3 --maxrregcount=256  # -g -G
+FLAGS:=-arch=sm_80 -O3 --maxrregcount=512  # -g -G
 INSTALL_DIR:=../../lib
 
 ${LIB}: ${SRC}
