@@ -2547,38 +2547,38 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
         "wilson dslash total time: (without malloc free memcpy) : %.9lf sec\n",
         double(duration) / 1e9);
   }
-  {
-    // just clover
-    checkCudaErrors(cudaDeviceSynchronize());
-    auto start = std::chrono::high_resolution_clock::now();
-    clover<<<gridDim, blockDim>>>(gauge, propagator, lat_x, lat_y, lat_z, lat_t,
-                                  parity);
-    err = cudaGetLastError();
-    checkCudaErrors(err);
-    checkCudaErrors(cudaDeviceSynchronize());
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
-            .count();
-    printf("just clover total time: (without malloc free memcpy) : %.9lf sec\n",
-           double(duration) / 1e9);
-  }
-  {
-    // give clover
-    checkCudaErrors(cudaDeviceSynchronize());
-    auto start = std::chrono::high_resolution_clock::now();
-    give_clover<<<gridDim, blockDim>>>(propagator, fermion_in, fermion_out,
-                                       lat_x, lat_y, lat_z, lat_t, parity);
-    err = cudaGetLastError();
-    checkCudaErrors(err);
-    checkCudaErrors(cudaDeviceSynchronize());
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
-            .count();
-    printf("give clover total time: (without malloc free memcpy) : %.9lf sec\n",
-           double(duration) / 1e9);
-  }
+//  {
+//    // just clover
+//    checkCudaErrors(cudaDeviceSynchronize());
+//    auto start = std::chrono::high_resolution_clock::now();
+//    clover<<<gridDim, blockDim>>>(gauge, propagator, lat_x, lat_y, lat_z, lat_t,
+//                                  parity);
+//    err = cudaGetLastError();
+//    checkCudaErrors(err);
+//    checkCudaErrors(cudaDeviceSynchronize());
+//    auto end = std::chrono::high_resolution_clock::now();
+//    auto duration =
+//        std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
+//            .count();
+//    printf("just clover total time: (without malloc free memcpy) : %.9lf sec\n",
+//           double(duration) / 1e9);
+//  }
+//  {
+//    // give clover
+//    checkCudaErrors(cudaDeviceSynchronize());
+//    auto start = std::chrono::high_resolution_clock::now();
+//    give_clover<<<gridDim, blockDim>>>(propagator, fermion_in, fermion_out,
+//                                       lat_x, lat_y, lat_z, lat_t, parity);
+//    err = cudaGetLastError();
+//    checkCudaErrors(err);
+//    checkCudaErrors(cudaDeviceSynchronize());
+//    auto end = std::chrono::high_resolution_clock::now();
+//    auto duration =
+//        std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
+//            .count();
+//    printf("give clover total time: (without malloc free memcpy) : %.9lf sec\n",
+//           double(duration) / 1e9);
+//  }
   {
     // free
     checkCudaErrors(cudaFree(propagator));

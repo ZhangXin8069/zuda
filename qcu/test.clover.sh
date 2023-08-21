@@ -1,5 +1,5 @@
 bash ./install.sh
-pushd /home/aistudio/external-libraries/PyQuda
-pip install -U . -t /home/aistudio/external-libraries
+pushd ${HOME}/external-libraries/PyQuda-master
+pip install -U . -t ${HOME}/external-libraries
 popd
-python ./test.clover.dslash.qcu.py
+mpirun -np 1 python ./test.clover.dslash.qcu.py

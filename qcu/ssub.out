@@ -1,3 +1,5 @@
+Looking in indexes: https://pypi.org/simple, https://pypi.ngc.nvidia.com
+Processing /public/home/zhangxin/external-libraries/PyQuda-master
 ~ ~/qcu
 ~/configure ~ ~/qcu
 HOME:/public/home/zhangxin/configure
@@ -9,3 +11,235 @@ HOME:/public/home/zhangxin/content
 HOME:/public/home/zhangxin/zuda
 ~ ~/qcu
 ~/qcu
+PATH:/public/home/zhangxin/qcu
+~ ~/qcu
+~ ~ ~/qcu
+~/configure ~ ~ ~/qcu
+HOME:/public/home/zhangxin/configure
+~ ~ ~/qcu
+~/content ~ ~ ~/qcu
+HOME:/public/home/zhangxin/content
+~ ~ ~/qcu
+~/zuda ~ ~ ~/qcu
+HOME:/public/home/zhangxin/zuda
+~ ~ ~/qcu
+~ ~/qcu
+~/qcu
+~/qcu/cuda ~/qcu
+nvcc -shared -Xcompiler -fPIC -o libqcu.so qcu_cuda.cu -I/public/home/zhangxin/external-libraries/PyQuda-master/pyquda/include/qcu -arch=sm_80 -O3 --maxrregcount=512  
+Building wheels for collected packages: PyQuda
+  Building wheel for PyQuda (setup.py): started
+cp libqcu.so ../../lib/
+rm libqcu.so
+~/qcu
+~/external-libraries/PyQuda-master ~/qcu
+Looking in indexes: https://pypi.org/simple, https://pypi.ngc.nvidia.com
+Processing /public/home/zhangxin/external-libraries/PyQuda-master
+Building wheels for collected packages: PyQuda
+  Building wheel for PyQuda (setup.py): started
+  Building wheel for PyQuda (setup.py): finished with status 'done'
+  Created wheel for PyQuda: filename=PyQuda-0.3.2-cp39-cp39-linux_x86_64.whl size=282891 sha256=23de61d22171254d85211a5fdf10881c819f1065d1b093c9de706e045c50a4ee
+  Stored in directory: /tmp/pip-ephem-wheel-cache-xipr23x6/wheels/10/17/25/727695fa32f628aa5ececf172e4c6604cc0b8a222d20cddd7f
+Successfully built PyQuda
+Installing collected packages: PyQuda
+Successfully installed PyQuda-0.3.2
+~/qcu
+Disabling GPU-Direct RDMA access
+Enabling peer-to-peer copy engine and direct load/store access
+QUDA 1.1.0 (git 1.1.0--sm_80)
+CUDA Driver version = 11040
+CUDA Runtime version = 11040
+Graphic driver version = 470.42.01
+Found device 0: NVIDIA A100-PCIE-40GB
+Using device 0: NVIDIA A100-PCIE-40GB
+WARNING: Data reordering done on GPU (set with QUDA_REORDER_LOCATION=GPU/CPU)
+Loaded 20 sets of cached parameters from .cache/tunecache.tsv
+Loaded 20 sets of cached parameters from .cache/tunecache.tsv
+WARNING: Using device memory pool allocator
+WARNING: Using pinned memory pool allocator
+cublasCreated successfully
+===============round  0 ======================
+Creating Gaussian distributed Lie group field with sigma = 1.000000e+00
+Quda dslash: 0.004391642985865474 sec
+wilson dslash total time: (without malloc free memcpy) : 0.002877333 sec
+wilson dslash total time: (without malloc free memcpy) : 0.002868768 sec
+QCU dslash: 0.0183702539652586 sec
+difference:  2.8401074356212417e-16
+===============round  1 ======================
+Creating Gaussian distributed Lie group field with sigma = 1.000000e+00
+Quda dslash: 0.004071308998391032 sec
+wilson dslash total time: (without malloc free memcpy) : 0.002867963 sec
+wilson dslash total time: (without malloc free memcpy) : 0.002876521 sec
+QCU dslash: 0.016406893031671643 sec
+difference:  2.839534862061472e-16
+===============round  2 ======================
+Creating Gaussian distributed Lie group field with sigma = 1.000000e+00
+Quda dslash: 0.004082751926034689 sec
+wilson dslash total time: (without malloc free memcpy) : 0.002879433 sec
+wilson dslash total time: (without malloc free memcpy) : 0.002587271 sec
+QCU dslash: 0.01611721212975681 sec
+difference:  2.840392294359569e-16
+===============round  3 ======================
+Creating Gaussian distributed Lie group field with sigma = 1.000000e+00
+Quda dslash: 0.003832970978692174 sec
+wilson dslash total time: (without malloc free memcpy) : 0.001720398 sec
+wilson dslash total time: (without malloc free memcpy) : 0.001727404 sec
+QCU dslash: 0.013621838064864278 sec
+difference:  2.8399115298500095e-16
+===============round  4 ======================
+Creating Gaussian distributed Lie group field with sigma = 1.000000e+00
+Quda dslash: 0.0038480099756270647 sec
+wilson dslash total time: (without malloc free memcpy) : 0.001708904 sec
+wilson dslash total time: (without malloc free memcpy) : 0.001704580 sec
+QCU dslash: 0.014639513101428747 sec
+difference:  2.840326607086911e-16
+WARNING: Environment variable QUDA_PROFILE_OUTPUT_BASE not set; writing to profile.tsv and profile_async.tsv
+Saving 20 sets of cached parameters to .cache/profile_0.tsv
+Saving 0 sets of cached profiles to .cache/profile_async_0.tsv
+
+               initQuda Total time =     3.965 secs
+                     init     =     3.965 secs ( 99.999%),	 with        2 calls at 1.983e+06 us per call
+        total accounted       =     3.965 secs ( 99.999%)
+        total missing         =     0.000 secs (  0.001%)
+
+          loadGaugeQuda Total time =     0.273 secs
+                 download     =     0.203 secs ( 74.448%),	 with       10 calls at 2.033e+04 us per call
+                   upload     =     0.021 secs (  7.529%),	 with        5 calls at 4.112e+03 us per call
+                     init     =     0.031 secs ( 11.279%),	 with       10 calls at 3.080e+03 us per call
+                  compute     =     0.018 secs (  6.690%),	 with       10 calls at 1.827e+03 us per call
+                     free     =     0.000 secs (  0.014%),	 with       10 calls at 3.900e+00 us per call
+        total accounted       =     0.273 secs ( 99.961%)
+        total missing         =     0.000 secs (  0.039%)
+
+             dslashQuda Total time =     0.004 secs
+                 download     =     0.000 secs (  4.330%),	 with       10 calls at 1.710e+01 us per call
+                   upload     =     0.000 secs (  1.722%),	 with       10 calls at 6.800e+00 us per call
+                     init     =     0.000 secs (  6.077%),	 with       10 calls at 2.400e+01 us per call
+                  compute     =     0.003 secs ( 87.288%),	 with       10 calls at 3.447e+02 us per call
+                     free     =     0.000 secs (  0.203%),	 with       10 calls at 8.000e-01 us per call
+        total accounted       =     0.004 secs ( 99.620%)
+        total missing         =     0.000 secs (  0.380%)
+
+                endQuda Total time =     0.015 secs
+
+       initQuda-endQuda Total time =     4.948 secs
+
+                   QUDA Total time =     4.447 secs
+                 download     =     0.203 secs (  4.575%),	 with       20 calls at 1.017e+04 us per call
+                   upload     =     0.021 secs (  0.464%),	 with       15 calls at 1.375e+03 us per call
+                     init     =     3.996 secs ( 89.868%),	 with       22 calls at 1.817e+05 us per call
+                  compute     =     0.212 secs (  4.757%),	 with       25 calls at 8.461e+03 us per call
+                     free     =     0.000 secs (  0.001%),	 with       20 calls at 2.350e+00 us per call
+        total accounted       =     4.432 secs ( 99.665%)
+        total missing         =     0.015 secs (  0.335%)
+
+Device memory used = 2839.5 MiB
+Pinned device memory used = 0.0 MiB
+Managed memory used = 0.0 MiB
+Shmem memory used = 0.0 MiB
+Page-locked host memory used = 84.0 MiB
+Total host memory used >= 115.5 MiB
+
+  Building wheel for PyQuda (setup.py): finished with status 'done'
+  Created wheel for PyQuda: filename=PyQuda-0.3.2-cp39-cp39-linux_x86_64.whl size=282891 sha256=0d602d3ca41d70d203a393716d08649944b27f93c2a1e97929443973e21515c3
+  Stored in directory: /tmp/pip-ephem-wheel-cache-8j0l68qa/wheels/10/17/25/727695fa32f628aa5ececf172e4c6604cc0b8a222d20cddd7f
+Successfully built PyQuda
+Installing collected packages: PyQuda
+Successfully installed PyQuda-0.3.2
+~/qcu
+Disabling GPU-Direct RDMA access
+Enabling peer-to-peer copy engine and direct load/store access
+QUDA 1.1.0 (git 1.1.0--sm_80)
+CUDA Driver version = 11040
+CUDA Runtime version = 11040
+Graphic driver version = 470.42.01
+Found device 0: NVIDIA A100-PCIE-40GB
+Using device 0: NVIDIA A100-PCIE-40GB
+WARNING: Data reordering done on GPU (set with QUDA_REORDER_LOCATION=GPU/CPU)
+Loaded 20 sets of cached parameters from .cache/tunecache.tsv
+Loaded 20 sets of cached parameters from .cache/tunecache.tsv
+WARNING: Using device memory pool allocator
+WARNING: Using pinned memory pool allocator
+cublasCreated successfully
+===============round  0 ======================
+Creating Gaussian distributed Lie group field with sigma = 1.000000e+00
+Quda dslash: 0.004424246959388256 sec
+wilson dslash total time: (without malloc free memcpy) : 0.002863273 sec
+wilson dslash total time: (without malloc free memcpy) : 0.002881138 sec
+QCU dslash: 0.01840660092420876 sec
+difference:  2.839448162419017e-16
+===============round  1 ======================
+Creating Gaussian distributed Lie group field with sigma = 1.000000e+00
+Quda dslash: 0.004068504786118865 sec
+wilson dslash total time: (without malloc free memcpy) : 0.002879608 sec
+wilson dslash total time: (without malloc free memcpy) : 0.001785742 sec
+QCU dslash: 0.015295132994651794 sec
+difference:  2.8395295119498876e-16
+===============round  2 ======================
+Creating Gaussian distributed Lie group field with sigma = 1.000000e+00
+Quda dslash: 0.0038430991116911173 sec
+wilson dslash total time: (without malloc free memcpy) : 0.001729463 sec
+wilson dslash total time: (without malloc free memcpy) : 0.001722518 sec
+QCU dslash: 0.013884674059227109 sec
+difference:  2.839350761395119e-16
+===============round  3 ======================
+Creating Gaussian distributed Lie group field with sigma = 1.000000e+00
+Quda dslash: 0.003834904870018363 sec
+wilson dslash total time: (without malloc free memcpy) : 0.001705463 sec
+wilson dslash total time: (without malloc free memcpy) : 0.001706412 sec
+QCU dslash: 0.01613092189654708 sec
+difference:  2.8398304287022113e-16
+===============round  4 ======================
+Creating Gaussian distributed Lie group field with sigma = 1.000000e+00
+Quda dslash: 0.0038377451710402966 sec
+wilson dslash total time: (without malloc free memcpy) : 0.001715812 sec
+wilson dslash total time: (without malloc free memcpy) : 0.001711627 sec
+QCU dslash: 0.0156812840141356 sec
+difference:  2.840578805848435e-16
+WARNING: Environment variable QUDA_PROFILE_OUTPUT_BASE not set; writing to profile.tsv and profile_async.tsv
+Saving 20 sets of cached parameters to .cache/profile_0.tsv
+Saving 0 sets of cached profiles to .cache/profile_async_0.tsv
+
+               initQuda Total time =     3.683 secs
+                     init     =     3.683 secs ( 99.999%),	 with        2 calls at 1.841e+06 us per call
+        total accounted       =     3.683 secs ( 99.999%)
+        total missing         =     0.000 secs (  0.001%)
+
+          loadGaugeQuda Total time =     0.123 secs
+                 download     =     0.056 secs ( 45.261%),	 with       10 calls at 5.567e+03 us per call
+                   upload     =     0.020 secs ( 16.626%),	 with        5 calls at 4.090e+03 us per call
+                     init     =     0.029 secs ( 23.322%),	 with       10 calls at 2.868e+03 us per call
+                  compute     =     0.018 secs ( 14.670%),	 with       10 calls at 1.804e+03 us per call
+                     free     =     0.000 secs (  0.030%),	 with       10 calls at 3.700e+00 us per call
+        total accounted       =     0.123 secs ( 99.910%)
+        total missing         =     0.000 secs (  0.090%)
+
+             dslashQuda Total time =     0.004 secs
+                 download     =     0.000 secs (  4.418%),	 with       10 calls at 1.750e+01 us per call
+                   upload     =     0.000 secs (  1.893%),	 with       10 calls at 7.500e+00 us per call
+                     init     =     0.000 secs (  5.933%),	 with       10 calls at 2.350e+01 us per call
+                  compute     =     0.003 secs ( 87.175%),	 with       10 calls at 3.453e+02 us per call
+                     free     =     0.000 secs (  0.177%),	 with       10 calls at 7.000e-01 us per call
+        total accounted       =     0.004 secs ( 99.596%)
+        total missing         =     0.000 secs (  0.404%)
+
+                endQuda Total time =     0.012 secs
+
+       initQuda-endQuda Total time =     4.466 secs
+
+                   QUDA Total time =     3.991 secs
+                 download     =     0.056 secs (  1.399%),	 with       20 calls at 2.792e+03 us per call
+                   upload     =     0.021 secs (  0.514%),	 with       15 calls at 1.368e+03 us per call
+                     init     =     3.712 secs ( 93.007%),	 with       22 calls at 1.687e+05 us per call
+                  compute     =     0.190 secs (  4.772%),	 with       25 calls at 7.618e+03 us per call
+                     free     =     0.000 secs (  0.001%),	 with       20 calls at 2.200e+00 us per call
+        total accounted       =     3.979 secs ( 99.694%)
+        total missing         =     0.012 secs (  0.306%)
+
+Device memory used = 2839.5 MiB
+Pinned device memory used = 0.0 MiB
+Managed memory used = 0.0 MiB
+Shmem memory used = 0.0 MiB
+Page-locked host memory used = 84.0 MiB
+Total host memory used >= 115.5 MiB
+
