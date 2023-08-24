@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <type_traits>
 #include <vector>
 
 using namespace std;
@@ -9,37 +10,40 @@ using namespace std;
 typedef complex<double> Complex;
 
 // 打印矩阵
-void printMatrix(const vector<Complex> &matrix, int rows, int cols) {
+void printMatrix(const Complex *inputMatrix, int rows, int cols) {
   for (int i = 0; i < rows; ++i) {
     for (int j = 0; j < cols; ++j) {
-      cout << matrix[i * cols + j] << "\t";
+      cout << inputMatrix[i * cols + j] << "\t";
     }
     cout << endl;
   }
 }
 
 // 高斯-约旦法求逆矩阵
-void gaussJordanInverse(vector<Complex> &matrix, int size) {
+void gaussJordanInverse(const Complex *inputMatrix, Complex *inverseMatrix,
+                        int size) {
   // 构造增广矩阵
-  vector<vector<Complex>> augmentedMatrix(size, vector<Complex>(2 * size));
+  Complex augmentedMatrix[2 * size * size];
   for (int i = 0; i < size; ++i) {
     for (int j = 0; j < size; ++j) {
-      augmentedMatrix[i * 2 * size + j] = matrix[i * size + j];
+      inverseMatrix[i * size + j] = inputMatrix[i * size + j];
+      augmentedMatrix[i * 2 * size + j] = inverseMatrix[i * size + j];
     }
-    augmentedMatrix[i * 2 * size + i + size] = 1.0;
+    augmentedMatrix[i * 2 * size + size + i] = 1.0;
   }
 
   // 高斯消元
   for (int i = 0; i < size; ++i) {
-    Complex pivot = augmentedMatrix[i][i];
+    Complex pivot = augmentedMatrix[i * 2 * size + i];
     for (int j = 0; j < 2 * size; ++j) {
       augmentedMatrix[i * 2 * size + j] /= pivot;
     }
     for (int j = 0; j < size; ++j) {
       if (j != i) {
-        Complex factor = augmentedMatrix[j][i];
+        Complex factor = augmentedMatrix[j * 2 * size + i];
         for (int k = 0; k < 2 * size; ++k) {
-          augmentedMatrix[i * 2 * size + k] -= factor * augmentedMatrix[i][k];
+          augmentedMatrix[j * 2 * size + k] -=
+              factor * augmentedMatrix[i * 2 * size + k];
         }
       }
     }
@@ -48,7 +52,7 @@ void gaussJordanInverse(vector<Complex> &matrix, int size) {
   // 提取逆矩阵
   for (int i = 0; i < size; ++i) {
     for (int j = 0; j < size; ++j) {
-      matrix[i * size + j] = augmentedMatrix[i][size + j];
+      inverseMatrix[i * size + j] = augmentedMatrix[i * 2 * size + size + j];
     }
   }
 }
@@ -56,8 +60,9 @@ void gaussJordanInverse(vector<Complex> &matrix, int size) {
 int main() {
   srand(time(0));
 
-  int size = 6; // 矩阵大小为3x3
-  vector<Complex> inputMatrix(size * size);
+  int size = 20; // 矩阵大小为3x3
+  Complex inputMatrix[size * size];
+  Complex inverseMatrix[size * size];
 
   // 生成随机复数矩阵
   for (int i = 0; i < size * size; ++i) {
@@ -70,15 +75,14 @@ int main() {
   printMatrix(inputMatrix, size, size);
 
   // 求逆矩阵
-  vector<Complex> inverseMatrix = inputMatrix; // 复制输入矩阵
-  gaussJordanInverse(inverseMatrix, size);
+  gaussJordanInverse(inputMatrix, inverseMatrix, size);
 
   cout << "\nInverse Matrix:" << endl;
   printMatrix(inverseMatrix, size, size);
 
   // 验证
   cout << "\nVerification:" << endl;
-  vector<Complex> resultMatrix(size * size);
+  Complex resultMatrix[size * size];
   for (int i = 0; i < size; ++i) {
     for (int j = 0; j < size; ++j) {
       Complex sum = 0;
@@ -88,7 +92,6 @@ int main() {
       resultMatrix[i * size + j] = sum;
     }
   }
-
   printMatrix(resultMatrix, size, size);
 
   return 0;
