@@ -421,6 +421,8 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
   }
 }
 
+
+
 void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
                QcuParam *param, int parity) {
   int lat_x = param->lattice_size[0] >> 1;
