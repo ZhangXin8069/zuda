@@ -25,6 +25,7 @@ source ${_HOME}/tmp/scripts.sh
 # do
 ## export
 export CPATH=$CPATH:/usr/include/mpi/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${_HOME}/lib/
 # export PYTHONPATH=$(cd ~ && pwd)/external-libraries:$PYTHONPATH
 # export LD_LIBRARY_PATH=$(cd ~ && pwd)/external-libraries/quda/build/lib/libquda.so:$LD_LIBRARY_PATH
 
