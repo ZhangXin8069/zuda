@@ -199,7 +199,7 @@ struct LatticeComplex {
                 size)                                                          \
   {                                                                            \
     for (int i = 0; i < size; i++) {                                           \
-      for (int j = 0; j < size; ++j) {                                         \
+      for (int j = 0; j < size; j++) {                                         \
         inverse_matrix[i * size + j] = input_matrix[i * size + j];             \
         augmented_matrix[i * 2 * size + j] = inverse_matrix[i * size + j];     \
       }                                                                        \
@@ -207,10 +207,10 @@ struct LatticeComplex {
     }                                                                          \
     for (int i = 0; i < size; i++) {                                           \
       pivot = augmented_matrix[i * 2 * size + i];                              \
-      for (int j = 0; j < 2 * size; ++j) {                                     \
+      for (int j = 0; j < 2 * size; j++) {                                     \
         augmented_matrix[i * 2 * size + j] /= pivot;                           \
       }                                                                        \
-      for (int j = 0; j < size; ++j) {                                         \
+      for (int j = 0; j < size; j++) {                                         \
         if (j != i) {                                                          \
           factor = augmented_matrix[j * 2 * size + i];                         \
           for (int k = 0; k < 2 * size; ++k) {                                 \
@@ -221,7 +221,7 @@ struct LatticeComplex {
       }                                                                        \
     }                                                                          \
     for (int i = 0; i < size; i++) {                                           \
-      for (int j = 0; j < size; ++j) {                                         \
+      for (int j = 0; j < size; j++) {                                         \
         inverse_matrix[i * size + j] =                                         \
             augmented_matrix[i * 2 * size + size + j];                         \
       }                                                                        \
@@ -232,7 +232,7 @@ struct LatticeComplex {
                        factor, size)                                           \
   {                                                                            \
     for (int i = 0; i < size; i++) {                                           \
-      for (int j = 0; j < size; ++j) {                                         \
+      for (int j = 0; j < size; j++) {                                         \
         inverse_matrix[i * size + j] = input_matrix[i * size + j];             \
         augmented_matrix[i * 2 * size + j] = inverse_matrix[i * size + j];     \
       }                                                                        \
@@ -240,10 +240,10 @@ struct LatticeComplex {
     }                                                                          \
     for (int i = 0; i < size; i++) {                                           \
       pivot = augmented_matrix[i * 2 * size + i];                              \
-      for (int j = 0; j < 2 * size; ++j) {                                     \
+      for (int j = 0; j < 2 * size; j++) {                                     \
         augmented_matrix[i * 2 * size + j] /= pivot;                           \
       }                                                                        \
-      for (int j = 0; j < size; ++j) {                                         \
+      for (int j = 0; j < size; j++) {                                         \
         if (j != i) {                                                          \
           factor = augmented_matrix[j * 2 * size + i];                         \
           for (int k = 0; k < 2 * size; ++k) {                                 \
@@ -254,7 +254,7 @@ struct LatticeComplex {
       }                                                                        \
     }                                                                          \
     for (int i = 0; i < size; i++) {                                           \
-      for (int j = 0; j < size; ++j) {                                         \
+      for (int j = 0; j < size; j++) {                                         \
         inverse_matrix[i * size + j] =                                         \
             augmented_matrix[i * 2 * size + size + j];                         \
       }                                                                        \
@@ -1459,7 +1459,7 @@ void give_clover(void *device_clover, void *device_dest, int device_lat_x,
   // LatticeComplex factor;
   // inverse(input_tmp, inverse_tmp, augmented_tmp, pivot, factor, 3);
   give_ptr(input_clover, clover, 144);
-  give_value(tmp, zero, 12);
+  give_value(tmp, zero, 12); 
   {
     for (int sc0 = 0; sc0 < 12; sc0++) {
       tmp0 = zero;
