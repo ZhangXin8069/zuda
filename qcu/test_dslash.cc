@@ -6,147 +6,6 @@
 #include <cmath>
 #include <cstdio>
 
-#define give_value(U, zero, n)                                                 \
-  {                                                                            \
-    for (int i = 0; i < n; i++) {                                              \
-      U[i] = zero;                                                             \
-    }                                                                          \
-  }
-#define give_ptr(U, origin_U, n)                                               \
-  {                                                                            \
-    for (int i = 0; i < n; i++) {                                              \
-      U[i] = origin_U[i];                                                      \
-    }                                                                          \
-  }
-#define add(U, tmp, n)                                                         \
-  {                                                                            \
-    for (int i = 0; i < n; i++) {                                              \
-      U[i] += tmp3[i];                                                         \
-    }                                                                          \
-  }
-
-#define give_u(tmp, tmp_U)                                                     \
-  {                                                                            \
-    for (int i = 0; i < 6; i++) {                                              \
-      tmp[i] = tmp_U[i];                                                       \
-    }                                                                          \
-    tmp[6] = (tmp[1] * tmp[5] - tmp[2] * tmp[4]).conj();                       \
-    tmp[7] = (tmp[2] * tmp[3] - tmp[0] * tmp[5]).conj();                       \
-    tmp[8] = (tmp[0] * tmp[4] - tmp[1] * tmp[3]).conj();                       \
-  }
-
-#define mult_u_none_none(tmp0, tmp1, tmp2, tmp3, zero)                         \
-  {                                                                            \
-    for (int c0 = 0; c0 < 3; c0++) {                                           \
-      for (int c1 = 0; c1 < 3; c1++) {                                         \
-        tmp0 = zero;                                                           \
-        for (int cc = 0; cc < 3; cc++) {                                       \
-          tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];                       \
-        }                                                                      \
-        tmp3[c0 * 3 + c1] = tmp0;                                              \
-      }                                                                        \
-    }                                                                          \
-  }
-
-#define mult_u_none_dag(tmp0, tmp1, tmp2, tmp3, zero)                          \
-  {                                                                            \
-    for (int c0 = 0; c0 < 3; c0++) {                                           \
-      for (int c1 = 0; c1 < 3; c1++) {                                         \
-        tmp0 = zero;                                                           \
-        for (int cc = 0; cc < 3; cc++) {                                       \
-          tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj();                \
-        }                                                                      \
-        tmp3[c0 * 3 + c1] = tmp0;                                              \
-      }                                                                        \
-    }                                                                          \
-  }
-
-#define mult_u_dag_none(tmp0, tmp1, tmp2, tmp3, zero)                          \
-  {                                                                            \
-    for (int c0 = 0; c0 < 3; c0++) {                                           \
-      for (int c1 = 0; c1 < 3; c1++) {                                         \
-        tmp0 = zero;                                                           \
-        for (int cc = 0; cc < 3; cc++) {                                       \
-          tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1];                \
-        }                                                                      \
-        tmp3[c0 * 3 + c1] = tmp0;                                              \
-      }                                                                        \
-    }                                                                          \
-  }
-
-#define mult_u_dag_dag(tmp0, tmp1, tmp2, tmp3, zero)                           \
-  {                                                                            \
-    for (int c0 = 0; c0 < 3; c0++) {                                           \
-      for (int c1 = 0; c1 < 3; c1++) {                                         \
-        tmp0 = zero;                                                           \
-        for (int cc = 0; cc < 3; cc++) {                                       \
-          tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj();         \
-        }                                                                      \
-        tmp3[c0 * 3 + c1] = tmp0;                                              \
-      }                                                                        \
-    }                                                                          \
-  }
-
-#define inverse(input_matrix, inverse_matrix, augmented_matrix, pivot, factor, \
-                size)                                                          \
-  {                                                                            \
-    for (int i = 0; i < size; ++i) {                                           \
-      for (int j = 0; j < size; ++j) {                                         \
-        inverse_matrix[i * size + j] = input_matrix[i * size + j];             \
-        augmented_matrix[i * 2 * size + j] = inverse_matrix[i * size + j];     \
-      }                                                                        \
-      augmented_matrix[i * 2 * size + size + i] = 1.0;                         \
-    }                                                                          \
-    for (int i = 0; i < size; ++i) {                                           \
-      pivot = augmented_matrix[i * 2 * size + i];                              \
-      for (int j = 0; j < 2 * size; ++j) {                                     \
-        augmented_matrix[i * 2 * size + j] /= pivot;                           \
-      }                                                                        \
-      for (int j = 0; j < size; ++j) {                                         \
-        if (j != i) {                                                          \
-          factor = augmented_matrix[j * 2 * size + i];                         \
-          for (int k = 0; k < 2 * size; ++k) {                                 \
-            augmented_matrix[j * 2 * size + k] -=                              \
-                factor * augmented_matrix[i * 2 * size + k];                   \
-          }                                                                    \
-        }                                                                      \
-      }                                                                        \
-    }                                                                          \
-    for (int i = 0; i < size; ++i) {                                           \
-      for (int j = 0; j < size; ++j) {                                         \
-        inverse_matrix[i * size + j] =                                         \
-            augmented_matrix[i * 2 * size + size + j];                         \
-      }                                                                        \
-    }                                                                          \
-  }
-
-#define print_matrix(input_matrix, size)                                       \
-  {                                                                            \
-    for (int i = 0; i < size; ++i) {                                           \
-      for (int j = 0; j < size; ++j) {                                         \
-        printf("(%.d,%.d):(%.16lf,%.16lf)\n", i, j,                            \
-               input_matrix[i * size + j].real,                                \
-               input_matrix[i * size + j].imag);                               \
-      }                                                                        \
-    }                                                                          \
-  }
-
-#define print_fermi(input_fermi, size)                                         \
-  {                                                                            \
-    for (int i = 0; i < size; ++i) {                                           \
-      printf("(%.d):(%.16lf,%.16lf)\n", i, input_fermi[i].real,                \
-             input_fermi[i].imag);                                             \
-    }                                                                          \
-  }
-
-#define give_rand(input_matrix, size)                                          \
-  {                                                                            \
-    for (int i = 0; i < size; ++i) {                                           \
-      input_matrix[i].real = static_cast<double>(rand()) / RAND_MAX;           \
-      input_matrix[i].imag = static_cast<double>(rand()) / RAND_MAX;           \
-    }                                                                          \
-  }
-
 struct LatticeComplex {
   double real;
   double imag;
@@ -225,6 +84,289 @@ struct LatticeComplex {
   double norm2() const { return sqrt(real * real + imag * imag); }
 };
 
+#define give_value(U, zero, n)                                                 \
+  {                                                                            \
+    for (int i = 0; i < n; i++) {                                              \
+      U[i] = zero;                                                             \
+    }                                                                          \
+  }
+
+#define give_ptr(U, origin_U, n)                                               \
+  {                                                                            \
+    for (int i = 0; i < n; i++) {                                              \
+      U[i] = origin_U[i];                                                      \
+    }                                                                          \
+  }
+
+#define give_rand(input_matrix, size)                                          \
+  {                                                                            \
+    for (int i = 0; i < size; i++) {                                           \
+      input_matrix[i].real = static_cast<double>(rand()) / RAND_MAX;           \
+      input_matrix[i].imag = static_cast<double>(rand()) / RAND_MAX;           \
+    }                                                                          \
+  }
+
+#define give_u(tmp, tmp_U)                                                     \
+  {                                                                            \
+    for (int i = 0; i < 6; i++) {                                              \
+      tmp[i] = tmp_U[i];                                                       \
+    }                                                                          \
+    tmp[6] = (tmp[1] * tmp[5] - tmp[2] * tmp[4]).conj();                       \
+    tmp[7] = (tmp[2] * tmp[3] - tmp[0] * tmp[5]).conj();                       \
+    tmp[8] = (tmp[0] * tmp[4] - tmp[1] * tmp[3]).conj();                       \
+  }
+
+#define add(U, tmp, n)                                                         \
+  {                                                                            \
+    for (int i = 0; i < n; i++) {                                              \
+      U[i] += tmp[i];                                                          \
+    }                                                                          \
+  }
+
+#define subt(U, tmp, n)                                                        \
+  {                                                                            \
+    for (int i = 0; i < n; i++) {                                              \
+      U[i] -= tmp[i];                                                          \
+    }                                                                          \
+  }
+
+#define mult(tmp0, tmp1, tmp2, tmp3, zero)                                     \
+  {                                                                            \
+    for (int c0 = 0; c0 < 3; c0++) {                                           \
+      for (int c1 = 0; c1 < 3; c1++) {                                         \
+        tmp0 = zero;                                                           \
+        for (int cc = 0; cc < 3; cc++) {                                       \
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];                       \
+        }                                                                      \
+        tmp3[c0 * 3 + c1] = tmp0;                                              \
+      }                                                                        \
+    }                                                                          \
+  }
+
+#define mult_u_none_none(tmp0, tmp1, tmp2, tmp3, zero)                         \
+  {                                                                            \
+    for (int c0 = 0; c0 < 3; c0++) {                                           \
+      for (int c1 = 0; c1 < 3; c1++) {                                         \
+        tmp0 = zero;                                                           \
+        for (int cc = 0; cc < 3; cc++) {                                       \
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[cc * 3 + c1];                       \
+        }                                                                      \
+        tmp3[c0 * 3 + c1] = tmp0;                                              \
+      }                                                                        \
+    }                                                                          \
+  }
+
+#define mult_u_none_dag(tmp0, tmp1, tmp2, tmp3, zero)                          \
+  {                                                                            \
+    for (int c0 = 0; c0 < 3; c0++) {                                           \
+      for (int c1 = 0; c1 < 3; c1++) {                                         \
+        tmp0 = zero;                                                           \
+        for (int cc = 0; cc < 3; cc++) {                                       \
+          tmp0 += tmp1[c0 * 3 + cc] * tmp2[c1 * 3 + cc].conj();                \
+        }                                                                      \
+        tmp3[c0 * 3 + c1] = tmp0;                                              \
+      }                                                                        \
+    }                                                                          \
+  }
+
+#define mult_u_dag_none(tmp0, tmp1, tmp2, tmp3, zero)                          \
+  {                                                                            \
+    for (int c0 = 0; c0 < 3; c0++) {                                           \
+      for (int c1 = 0; c1 < 3; c1++) {                                         \
+        tmp0 = zero;                                                           \
+        for (int cc = 0; cc < 3; cc++) {                                       \
+          tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[cc * 3 + c1];                \
+        }                                                                      \
+        tmp3[c0 * 3 + c1] = tmp0;                                              \
+      }                                                                        \
+    }                                                                          \
+  }
+
+#define mult_u_dag_dag(tmp0, tmp1, tmp2, tmp3, zero)                           \
+  {                                                                            \
+    for (int c0 = 0; c0 < 3; c0++) {                                           \
+      for (int c1 = 0; c1 < 3; c1++) {                                         \
+        tmp0 = zero;                                                           \
+        for (int cc = 0; cc < 3; cc++) {                                       \
+          tmp0 += tmp1[cc * 3 + c0].conj() * tmp2[c1 * 3 + cc].conj();         \
+        }                                                                      \
+        tmp3[c0 * 3 + c1] = tmp0;                                              \
+      }                                                                        \
+    }                                                                          \
+  }
+
+#define inverse(input_matrix, inverse_matrix, augmented_matrix, pivot, factor, \
+                size)                                                          \
+  {                                                                            \
+    for (int i = 0; i < size; i++) {                                           \
+      for (int j = 0; j < size; j++) {                                         \
+        inverse_matrix[i * size + j] = input_matrix[i * size + j];             \
+        augmented_matrix[i * 2 * size + j] = inverse_matrix[i * size + j];     \
+      }                                                                        \
+      augmented_matrix[i * 2 * size + size + i] = 1.0;                         \
+    }                                                                          \
+    for (int i = 0; i < size; i++) {                                           \
+      pivot = augmented_matrix[i * 2 * size + i];                              \
+      for (int j = 0; j < 2 * size; j++) {                                     \
+        augmented_matrix[i * 2 * size + j] /= pivot;                           \
+      }                                                                        \
+      for (int j = 0; j < size; j++) {                                         \
+        if (j != i) {                                                          \
+          factor = augmented_matrix[j * 2 * size + i];                         \
+          for (int k = 0; k < 2 * size; ++k) {                                 \
+            augmented_matrix[j * 2 * size + k] -=                              \
+                factor * augmented_matrix[i * 2 * size + k];                   \
+          }                                                                    \
+        }                                                                      \
+      }                                                                        \
+    }                                                                          \
+    for (int i = 0; i < size; i++) {                                           \
+      for (int j = 0; j < size; j++) {                                         \
+        inverse_matrix[i * size + j] =                                         \
+            augmented_matrix[i * 2 * size + size + j];                         \
+      }                                                                        \
+    }                                                                          \
+  }
+
+#define inverse_clover(input_matrix, inverse_matrix, augmented_matrix, pivot,  \
+                       factor)                                                 \
+  {                                                                            \
+    for (int s0 = 0; s0 < 4; s0++) {                                           \
+      for (int c0 = 0; c0 < 3; c0++) {                                         \
+        for (int s1 = 0; s1 < 4; s1++) {                                       \
+          for (int c1 = 0; c1 < 3; c1++) {                                     \
+            inverse_matrix[s0 * 36 + s1 * 9 + c0 * 3 + c1] =                   \
+                input_matrix[s0 * 36 + s1 * 9 + c0 * 3 + c1];                  \
+            augmented_matrix[s0 * 72 + s1 * 9 + c0 * 3 + c1] =                 \
+                inverse_matrix[s0 * 36 + s1 * 9 + c0 * 3 + c1];                \
+          }                                                                    \
+        }                                                                      \
+        augmented_matrix[s0 * 72 + (4 + s0) * 9 + c0 * 3 + c0] = 1.0;          \
+      }                                                                        \
+    }                                                                          \
+    for (int s0 = 0; s0 < 4; s0++) {                                           \
+      for (int c0 = 0; c0 < 3; c0++) {                                         \
+        pivot = augmented_matrix[s0 * 72 + s0 * 9 + c0 * 3 + c0];              \
+        for (int s1 = 0; s1 < 8; s1++) {                                       \
+          for (int c1 = 0; c1 < 3; c1++) {                                     \
+            augmented_matrix[s0 * 72 + s1 * 9 + c0 * 3 + c1] /= pivot;         \
+          }                                                                    \
+        }                                                                      \
+        for (int s1 = 0; s1 < 4; s1++) {                                       \
+          for (int c1 = 0; c1 < 3; c1++) {                                     \
+            if ((s0 != s1) || (c0 != c1)) {                                    \
+              factor = augmented_matrix[s1 * 72 + s0 * 9 + c1 * 3 + c0];       \
+              for (int ss1 = 0; ss1 < 8; ss1++) {                              \
+                for (int cc1 = 0; cc1 < 3; cc1++) {                            \
+                  augmented_matrix[s1 * 72 + ss1 * 9 + c1 * 3 + cc1] -=        \
+                      factor *                                                 \
+                      augmented_matrix[s0 * 72 + ss1 * 9 + c0 * 3 + cc1];      \
+                }                                                              \
+              }                                                                \
+            }                                                                  \
+          }                                                                    \
+        }                                                                      \
+      }                                                                        \
+    }                                                                          \
+    for (int s0 = 0; s0 < 4; s0++) {                                           \
+      for (int c0 = 0; c0 < 3; c0++) {                                         \
+        for (int s1 = 0; s1 < 4; s1++) {                                       \
+          for (int c1 = 0; c1 < 3; c1++) {                                     \
+            inverse_matrix[s0 * 36 + s1 * 9 + c0 * 3 + c1] =                   \
+                augmented_matrix[s0 * 72 + (4 + s1) * 9 + c0 * 3 + c1];        \
+          }                                                                    \
+        }                                                                      \
+      }                                                                        \
+    }                                                                          \
+  }
+
+#define print_gauge(input_gauge)                                               \
+  {                                                                            \
+    printf("############\n");                                                  \
+    printf("[");                                                               \
+    printf("[%.9lf,%.9lf]", input_gauge[0].real, input_gauge[0].imag);         \
+    printf("[%.9lf,%.9lf]", input_gauge[1].real, input_gauge[1].imag);         \
+    printf("[%.9lf,%.9lf]", input_gauge[2].real, input_gauge[2].imag);         \
+    printf("]\n");                                                             \
+    printf("[");                                                               \
+    printf("[%.9lf,%.9lf]", input_gauge[3].real, input_gauge[3].imag);         \
+    printf("[%.9lf,%.9lf]", input_gauge[4].real, input_gauge[4].imag);         \
+    printf("[%.9lf,%.9lf]", input_gauge[5].real, input_gauge[5].imag);         \
+    printf("]\n");                                                             \
+    printf("[");                                                               \
+    printf("[%.9lf,%.9lf]", input_gauge[6].real, input_gauge[6].imag);         \
+    printf("[%.9lf,%.9lf]", input_gauge[7].real, input_gauge[7].imag);         \
+    printf("[%.9lf,%.9lf]", input_gauge[8].real, input_gauge[8].imag);         \
+    printf("]\n");                                                             \
+  }
+
+#define print_fermi(input_fermi)                                               \
+  {                                                                            \
+    int tmp;                                                                   \
+    for (int s = 0; s < 4; s++) {                                              \
+      printf("######S%.1d######\n", s);                                        \
+      tmp = s * 9;                                                             \
+      printf("[");                                                             \
+      printf("[%.9lf,%.9lf]", input_fermi[tmp].real, input_fermi[tmp].imag);   \
+      printf("[%.9lf,%.9lf]", input_fermi[tmp + 1].real,                       \
+             input_fermi[tmp + 1].imag);                                       \
+      printf("[%.9lf,%.9lf]", input_fermi[tmp + 2].real,                       \
+             input_fermi[tmp + 2].imag);                                       \
+      printf("]\n");                                                           \
+      printf("[");                                                             \
+      printf("[%.9lf,%.9lf]", input_fermi[tmp + 3].real,                       \
+             input_fermi[tmp + 3].imag);                                       \
+      printf("[%.9lf,%.9lf]", input_fermi[tmp + 4].real,                       \
+             input_fermi[tmp + 4].imag);                                       \
+      printf("[%.9lf,%.9lf]", input_fermi[tmp + 5].real,                       \
+             input_fermi[tmp + 5].imag);                                       \
+      printf("]\n");                                                           \
+      printf("[");                                                             \
+      printf("[%.9lf,%.9lf]", input_fermi[tmp + 6].real,                       \
+             input_fermi[tmp + 6].imag);                                       \
+      printf("[%.9lf,%.9lf]", input_fermi[tmp + 7].real,                       \
+             input_fermi[tmp + 7].imag);                                       \
+      printf("[%.9lf,%.9lf]", input_fermi[tmp + 8].real,                       \
+             input_fermi[tmp + 8].imag);                                       \
+      printf("]\n");                                                           \
+    }                                                                          \
+  }
+
+#define print_clover(input_clover)                                             \
+  {                                                                            \
+    int tmp;                                                                   \
+    for (int s0 = 0; s0 < 4; s0++) {                                           \
+      for (int s1 = 0; s1 < 4; s1++) {                                         \
+        printf("######S%.1d,%.1dS######\n", s0, s1);                           \
+        tmp = s0 * 36 + s1 * 9;                                                \
+        printf("[");                                                           \
+        printf("[%.9lf,%.9lf]", input_clover[tmp].real,                        \
+               input_clover[tmp].imag);                                        \
+        printf("[%.9lf,%.9lf]", input_clover[tmp + 1].real,                    \
+               input_clover[tmp + 1].imag);                                    \
+        printf("[%.9lf,%.9lf]", input_clover[tmp + 2].real,                    \
+               input_clover[tmp + 2].imag);                                    \
+        printf("]\n");                                                         \
+        printf("[");                                                           \
+        printf("[%.9lf,%.9lf]", input_clover[tmp + 3].real,                    \
+               input_clover[tmp + 3].imag);                                    \
+        printf("[%.9lf,%.9lf]", input_clover[tmp + 4].real,                    \
+               input_clover[tmp + 4].imag);                                    \
+        printf("[%.9lf,%.9lf]", input_clover[tmp + 5].real,                    \
+               input_clover[tmp + 5].imag);                                    \
+        printf("]\n");                                                         \
+        printf("[");                                                           \
+        printf("[%.9lf,%.9lf]", input_clover[tmp + 6].real,                    \
+               input_clover[tmp + 6].imag);                                    \
+        printf("[%.9lf,%.9lf]", input_clover[tmp + 7].real,                    \
+               input_clover[tmp + 7].imag);                                    \
+        printf("[%.9lf,%.9lf]", input_clover[tmp + 8].real,                    \
+               input_clover[tmp + 8].imag);                                    \
+        printf("]\n");                                                         \
+      }                                                                        \
+    }                                                                          \
+  }
+
 void dslash(void *device_U, void *device_src, void *device_dest,
             int device_lat_x, const int device_lat_y, const int device_lat_z,
             const int device_lat_t, const int device_parity) {
@@ -265,8 +407,6 @@ void dslash(void *device_U, void *device_src, void *device_dest,
   LatticeComplex U[9];
   LatticeComplex src[12];
   LatticeComplex dest[12];
-  // print_fermi(origin_U, 9);
-  // print_fermi(origin_src, 12);
   // just wilson(Sum part)
   give_value(dest, zero, 12);
   {
@@ -449,12 +589,11 @@ void dslash(void *device_U, void *device_src, void *device_dest,
     }
   }
   give_ptr(origin_dest, dest, 12);
-  // print_fermi(dest, 12);
 }
 
-void clover(void *device_U, void *device_clover, int device_lat_x,
-            const int device_lat_y, const int device_lat_z,
-            const int device_lat_t, const int device_parity) {
+void make_clover(void *device_U, void *device_clover, int device_lat_x,
+                 const int device_lat_y, const int device_lat_z,
+                 const int device_lat_t, const int device_parity) {
   int parity;
   const int lat_x = device_lat_x;
   const int lat_y = device_lat_y;
@@ -501,13 +640,11 @@ void clover(void *device_U, void *device_clover, int device_lat_x,
     move0 = 0;
     tmp_U = (origin_U + parity * lat_tzyxcc);
     give_u(tmp1, tmp_U);
-    // print_fermi(tmp_U, 9);
 
     //// x+1,y,z,t;y
     move0 = (1 - (x == lat_x - 1) * lat_x) * (oe != parity);
     tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
     give_u(tmp2, tmp_U);
-    // print_fermi(tmp_U, 9);
     mult_u_none_none(tmp0, tmp1, tmp2, tmp3, zero);
   }
   {
@@ -1285,22 +1422,19 @@ void clover(void *device_U, void *device_clover, int device_lat_x,
   }
   {
     // A=1+T
-    int j = 13;
     LatticeComplex one(1.0, 0);
-    for (int i = 0; i < 144; i++) {
-      if (j == 13) {
-        clover[i] += one;
-        j = 0;
+    for (int s = 0; s < 4; s++) {
+      for (int c = 0; c < 3; c++) {
+        clover[s * 45 + c * 4] += one;
       }
-      j++;
+    }
+    for (int i = 0; i < 144; i++) {
       origin_clover[i] = clover[i];
     }
   }
-  // print_matrix(clover, 12);
-  // print_matrix(U, 3);
 }
 
-void give_clover(void *device_propagator, void *device_dest, int device_lat_x,
+void give_clover(void *device_clover, void *device_dest, int device_lat_x,
                  const int device_lat_y, const int device_lat_z) {
   const int lat_x = device_lat_x;
   const int lat_y = device_lat_y;
@@ -1311,56 +1445,36 @@ void give_clover(void *device_propagator, void *device_dest, int device_lat_x,
   const int t = 0;
   LatticeComplex zero(0.0, 0.0);
   LatticeComplex I(0.0, 1.0);
-  LatticeComplex tmp0(0.0, 0.0);
-  int tmp1;
-  int tmp2;
-  LatticeComplex *origin_propagator =
-      ((static_cast<LatticeComplex *>(device_propagator)) +
+  LatticeComplex tmp0;
+  LatticeComplex pivot;
+  LatticeComplex factor;
+  LatticeComplex *origin_clover =
+      ((static_cast<LatticeComplex *>(device_clover)) +
        t * lat_z * lat_y * lat_x * 144 + z * lat_y * lat_x * 144 +
        y * lat_x * 144 + x * 144);
   LatticeComplex *origin_dest =
       ((static_cast<LatticeComplex *>(device_dest)) +
        t * lat_z * lat_y * lat_x * 12 + z * lat_y * lat_x * 12 +
        y * lat_x * 12 + x * 12);
-  LatticeComplex input_propagator[144];
-  LatticeComplex propagator[144];
-  LatticeComplex augmented_propagator[288];
-  LatticeComplex pivot;
-  LatticeComplex factor;
+  LatticeComplex clover[144];
+  LatticeComplex augmented_clover[288];
   LatticeComplex dest[12];
-  LatticeComplex tmp[12];
-  // print_fermi(origin_propagator, 144);
-  printf("###########################\n");
-  give_ptr(input_propagator, origin_propagator, 144);
-  give_value(augmented_propagator, zero, 288);
-  // give_ptr(dest, origin_dest, 12);
-  inverse(input_propagator, propagator, augmented_propagator, pivot, factor,
-          12);
-  // print_fermi(propagator, 144);
-  give_ptr(input_propagator, propagator, 144);
-  give_value(tmp, zero, 12);
-  {
-    for (int sc0 = 0; sc0 < 12; sc0++) {
-      for (int sc1 = 0; sc1 < 12; sc1++) {
-        tmp0 = zero;
-        for (int scsc = 0; scsc < 12; scsc++) {
-          tmp0 += input_propagator[sc0 * 12 + scsc] *
-                  origin_propagator[scsc * 12 + sc1];
-        }
-        printf("(%.d,%.d):(%.16lf,%.16lf)\n", sc0, sc1, tmp0.real, tmp0.imag);
-        propagator[sc0 * 12 + sc1] = tmp0;
-      }
-    }
-  }
+  LatticeComplex tmp_dest[12];
+  give_ptr(dest, origin_dest, 12);
+  give_ptr(clover, origin_clover, 144);
+  print_clover(clover);
+  inverse_clover(clover, clover, augmented_clover, pivot, factor);
+  printf("###########\n");
+  print_clover(clover);
   {
     for (int sc0 = 0; sc0 < 12; sc0++) {
       tmp0 = zero;
       for (int sc1 = 0; sc1 < 12; sc1++) {
-        tmp0 += propagator[sc0 * 12 + sc1] * dest[sc1];
+        tmp0 += clover[sc0 * 12 + sc1] * dest[sc1];
       }
-      tmp[sc0] = tmp0;
+      tmp_dest[sc0] = tmp0;
     }
-    give_ptr(origin_dest, tmp, 12);
+    give_ptr(origin_dest, tmp_dest, 12);
   }
 }
 
@@ -1373,12 +1487,10 @@ int main() {
   LatticeComplex gauge[18 * 4];
   LatticeComplex fermion_in[12];
   LatticeComplex fermion_out[12];
-  LatticeComplex propagator[144];
+  LatticeComplex clover[144];
   {
     give_rand(gauge, 18 * 4);
     give_rand(fermion_in, 12);
-    // print_fermi(gauge, 18);
-    // print_fermi(fermion_in, 12);
   }
   {
     // wilson dslash
@@ -1389,34 +1501,31 @@ int main() {
         std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
             .count();
     printf(
-        "wilson dslash total time: (without malloc free memcpy) : %.16lf sec\n",
+        "wilson dslash total time: (without malloc free memcpy) : %.9lf sec\n",
         double(duration) / 1e9);
-    // print_fermi(fermion_out, 12);
   }
   {
     // just clover
     auto start = std::chrono::high_resolution_clock::now();
-    clover(gauge, (void *)propagator, lat_x, lat_y, lat_z, lat_t, parity);
+    make_clover(gauge, (void *)clover, lat_x, lat_y, lat_z, lat_t, parity);
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
             .count();
-    printf(
-        "just clover total time: (without malloc free memcpy) :%.16lf sec\n ",
-        double(duration) / 1e9);
+    printf("just clover total time: (without malloc free memcpy) :%.9lf sec\n ",
+           double(duration) / 1e9);
   }
   {
     // give clover
     auto start = std::chrono::high_resolution_clock::now();
-    give_clover((void *)propagator, fermion_out, lat_x, lat_y, lat_z);
+    give_clover((void *)clover, fermion_out, lat_x, lat_y, lat_z);
     auto end = std::chrono::high_resolution_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
             .count();
-    printf(
-        "give clover total time: (without malloc free memcpy) :%.16lf sec\n ",
-        double(duration) / 1e9);
+    printf("give clover total time: (without malloc free memcpy) :%.9lf sec\n ",
+           double(duration) / 1e9);
   }
   return 0;
 }
