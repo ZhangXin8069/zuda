@@ -1519,7 +1519,7 @@ __global__ void give_clover(void *device_clover, void *device_dest,
         tmp0 = zero;
         for (int s1 = 0; s1 < 4; s1++) {
           for (int c1 = 0; c1 < 3; c1++) {
-            tmp0 += clover[s0 * 36 + s1 * 9 + c0 * 3 + c0] * dest[s1 * 3 + c1];
+            tmp0 += clover[s0 * 36 + s1 * 9 + c0 * 3 + c1] * dest[s1 * 3 + c1];
           }
         }
         tmp_dest[s0 * 3 + c0] = tmp0;
