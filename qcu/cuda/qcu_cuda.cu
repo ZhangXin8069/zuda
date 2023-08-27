@@ -1477,7 +1477,7 @@ __global__ void make_clover(void *device_U, void *device_clover,
   }
 }
 
-__global__ void give_clover(void *device_propagator, void *device_dest,
+__global__ void give_clover(void *device_clover, void *device_dest,
                             int device_lat_x, const int device_lat_y,
                             const int device_lat_z) {
   const int lat_x = device_lat_x;
@@ -1514,12 +1514,16 @@ __global__ void give_clover(void *device_propagator, void *device_dest,
   give_ptr(clover, origin_clover, 144);
   inverse_clover(clover, clover, augmented_clover, pivot, factor);
   {
-    for (int sc0 = 0; sc0 < 12; sc0++) {
-      tmp0 = zero;
-      for (int sc1 = 0; sc1 < 12; sc1++) {
-        tmp0 += clover[sc0 * 12 + sc1] * dest[sc1];
+    for (int s0 = 0; s0 < 4; s0++) {
+      for (int c0 = 0; c0 < 3; c0++) {
+        tmp0 = zero;
+        for (int s1 = 0; s1 < 4; s1++) {
+          for (int c1 = 0; c1 < 3; c1++) {
+            tmp0 += clover[s0 * 36 + s1 * 9 + c0 * 3 + c0] * dest[s1 * 3 + c1];
+          }
+        }
+        tmp_dest[s0 * 3 + c0] = tmp0;
       }
-      tmp_dest[sc0] = tmp0;
     }
     give_ptr(origin_dest, tmp_dest, 12);
   }
