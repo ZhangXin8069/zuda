@@ -1309,8 +1309,8 @@ __global__ void clover(void *device_U, void *device_clover, int device_lat_x,
 }
 
 __global__ void give_clover(void *device_propagator, void *device_dest,
-                                     int device_lat_x, const int device_lat_y,
-                                     const int device_lat_z) {
+                            int device_lat_x, const int device_lat_y,
+                            const int device_lat_z) {
   const int lat_x = device_lat_x;
   const int lat_y = device_lat_y;
   const int lat_z = device_lat_z;
