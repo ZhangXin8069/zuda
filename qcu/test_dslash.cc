@@ -1,25 +1,11 @@
 #include <filesystem>
 #include <limits>
 #include <sys/types.h>
-#pragma nv_verbose
 #pragma optimize(5)
-#include "qcu.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
 
-#define BLOCK_SIZE 256
-
-#define checkCudaErrors(err)                                                   \
-  {                                                                            \
-    if (err != cudaSuccess) {                                                  \
-      fprintf(stderr,                                                          \
-              "checkCudaErrors() API error = %04d \"%s\" from file <%s>, "     \
-              "line %i.\n",                                                    \
-              err, cudaGetErrorString(err), __FILE__, __LINE__);               \
-      exit(-1);                                                                \
-    }                                                                          \
-  }
 #define give_value(U, zero, n)                                                 \
   {                                                                            \
     for (int i = 0; i < n; i++) {                                              \
@@ -134,113 +120,123 @@
     }                                                                          \
   }
 
+#define print_matrix(input_matrix, size)                                       \
+  {                                                                            \
+    for (int i = 0; i < size; ++i) {                                           \
+      for (int j = 0; j < size; ++j) {                                         \
+        printf("(%.d,%.d):(%.16lf,%.16lf)\n", i, j,                            \
+               input_matrix[i * size + j].real,                                \
+               input_matrix[i * size + j].imag);                               \
+      }                                                                        \
+    }                                                                          \
+  }
+
+#define print_fermi(input_fermi, size)                                         \
+  {                                                                            \
+    for (int i = 0; i < size; ++i) {                                           \
+      printf("(%.d):(%.16lf,%.16lf)\n", i, input_fermi[i].real,                \
+             input_fermi[i].imag);                                             \
+    }                                                                          \
+  }
+
+#define give_rand(input_matrix, size)                                          \
+  {                                                                            \
+    for (int i = 0; i < size; ++i) {                                           \
+      input_matrix[i].real = static_cast<double>(rand()) / RAND_MAX;           \
+      input_matrix[i].imag = static_cast<double>(rand()) / RAND_MAX;           \
+    }                                                                          \
+  }
+
 struct LatticeComplex {
   double real;
   double imag;
-  __forceinline__ __device__ LatticeComplex(const double &real = 0.0,
-                                            const double &imag = 0.0)
+  LatticeComplex(const double &real = 0.0, const double &imag = 0.0)
       : real(real), imag(imag) {}
-  __forceinline__ __device__ LatticeComplex &
-  operator=(const LatticeComplex &other) {
+  LatticeComplex &operator=(const LatticeComplex &other) {
     real = other.real;
     imag = other.imag;
     return *this;
   }
-  __forceinline__ __device__ LatticeComplex &operator=(const double &other) {
+  LatticeComplex &operator=(const double &other) {
     real = other;
     imag = 0;
     return *this;
   }
-  __forceinline__ __device__ LatticeComplex
-  operator+(const LatticeComplex &other) const {
+  LatticeComplex operator+(const LatticeComplex &other) const {
     return LatticeComplex(real + other.real, imag + other.imag);
   }
-  __forceinline__ __device__ LatticeComplex
-  operator-(const LatticeComplex &other) const {
+  LatticeComplex operator-(const LatticeComplex &other) const {
     return LatticeComplex(real - other.real, imag - other.imag);
   }
-  __forceinline__ __device__ LatticeComplex
-  operator*(const LatticeComplex &other) const {
+  LatticeComplex operator*(const LatticeComplex &other) const {
     return LatticeComplex(real * other.real - imag * other.imag,
                           real * other.imag + imag * other.real);
   }
-  __forceinline__ __device__ LatticeComplex
-  operator*(const double &other) const {
+  LatticeComplex operator*(const double &other) const {
     return LatticeComplex(real * other, imag * other);
   }
-  __forceinline__ __device__ LatticeComplex
-  operator/(const LatticeComplex &other) const {
+  LatticeComplex operator/(const LatticeComplex &other) const {
     double denom = other.real * other.real + other.imag * other.imag;
     return LatticeComplex((real * other.real + imag * other.imag) / denom,
                           (imag * other.real - real * other.imag) / denom);
   }
-  __forceinline__ __device__ LatticeComplex
-  operator/(const double &other) const {
+  LatticeComplex operator/(const double &other) const {
     return LatticeComplex(real / other, imag / other);
   }
-  __forceinline__ __device__ LatticeComplex operator-() const {
-    return LatticeComplex(-real, -imag);
-  }
-  __forceinline__ __device__ bool
-  operator==(const LatticeComplex &other) const {
+  LatticeComplex operator-() const { return LatticeComplex(-real, -imag); }
+  bool operator==(const LatticeComplex &other) const {
     return (real == other.real && imag == other.imag);
   }
-  __forceinline__ __device__ bool
-  operator!=(const LatticeComplex &other) const {
+  bool operator!=(const LatticeComplex &other) const {
     return !(*this == other);
   }
-  __forceinline__ __device__ LatticeComplex &
-  operator+=(const LatticeComplex &other) {
+  LatticeComplex &operator+=(const LatticeComplex &other) {
     real = real + other.real;
     imag = imag + other.imag;
     return *this;
   }
-  __forceinline__ __device__ LatticeComplex &
-  operator-=(const LatticeComplex &other) {
+  LatticeComplex &operator-=(const LatticeComplex &other) {
     real = real - other.real;
     imag = imag - other.imag;
     return *this;
   }
-  __forceinline__ __device__ LatticeComplex &
-  operator*=(const LatticeComplex &other) {
+  LatticeComplex &operator*=(const LatticeComplex &other) {
     real = real * other.real - imag * other.imag;
     imag = real * other.imag + imag * other.real;
     return *this;
   }
-  __forceinline__ __device__ LatticeComplex &operator*=(const double &other) {
+  LatticeComplex &operator*=(const double &other) {
     real = real * other;
     imag = imag * other;
     return *this;
   }
-  __forceinline__ __device__ LatticeComplex &
-  operator/=(const LatticeComplex &other) {
+  LatticeComplex &operator/=(const LatticeComplex &other) {
     double denom = other.real * other.real + other.imag * other.imag;
     real = (real * other.real + imag * other.imag) / denom;
     imag = (imag * other.real - real * other.imag) / denom;
     return *this;
   }
-  __forceinline__ __device__ LatticeComplex &operator/=(const double &other) {
+  LatticeComplex &operator/=(const double &other) {
     real = real / other;
     imag = imag / other;
     return *this;
   }
-  __forceinline__ __device__ LatticeComplex conj() const {
-    return LatticeComplex(real, -imag);
-  }
-  __forceinline__ __device__ double norm2() const {
-    return sqrt(real * real + imag * imag);
-  }
+  LatticeComplex conj() const { return LatticeComplex(real, -imag); }
+  double norm2() const { return sqrt(real * real + imag * imag); }
 };
 
-__global__ void dslash(void *device_U, void *device_src, void *device_dest,
-                       int device_lat_x, const int device_lat_y,
-                       const int device_lat_z, const int device_lat_t,
-                       const int device_parity) {
-  register int parity = blockIdx.x * blockDim.x + threadIdx.x;
+void dslash(void *device_U, void *device_src, void *device_dest,
+            int device_lat_x, const int device_lat_y, const int device_lat_z,
+            const int device_lat_t, const int device_parity) {
+  int parity;
   const int lat_x = device_lat_x;
   const int lat_y = device_lat_y;
   const int lat_z = device_lat_z;
   const int lat_t = device_lat_t;
+  const int x = 0;
+  const int y = 0;
+  const int z = 0;
+  const int t = 0;
   const int lat_xcc = lat_x * 9;
   const int lat_yxcc = lat_y * lat_xcc;
   const int lat_zyxcc = lat_z * lat_yxcc;
@@ -248,35 +244,29 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
   const int lat_xsc = lat_x * 12;
   const int lat_yxsc = lat_y * lat_xsc;
   const int lat_zyxsc = lat_z * lat_yxsc;
-  register int move;
-  move = lat_x * lat_y * lat_z;
-  const int t = parity / move;
-  parity -= t * move;
-  move = lat_x * lat_y;
-  const int z = parity / move;
-  parity -= z * move;
-  const int y = parity / lat_x;
-  const int x = parity - y * lat_x;
+  int move;
   parity = device_parity;
   const int oe = (y + z + t) % 2;
-  register LatticeComplex I(0.0, 1.0);
-  register LatticeComplex zero(0.0, 0.0);
-  register LatticeComplex *origin_U =
+  LatticeComplex I(0.0, 1.0);
+  LatticeComplex zero(0.0, 0.0);
+  LatticeComplex *origin_U =
       ((static_cast<LatticeComplex *>(device_U)) + t * lat_zyxcc +
        z * lat_yxcc + y * lat_xcc + x * 9);
-  register LatticeComplex *origin_src =
+  LatticeComplex *origin_src =
       ((static_cast<LatticeComplex *>(device_src)) + t * lat_zyxsc +
        z * lat_yxsc + y * lat_xsc + x * 12);
-  register LatticeComplex *origin_dest =
+  LatticeComplex *origin_dest =
       ((static_cast<LatticeComplex *>(device_dest)) + t * lat_zyxsc +
        z * lat_yxsc + y * lat_xsc + x * 12);
-  register LatticeComplex *tmp_U;
-  register LatticeComplex *tmp_src;
-  register LatticeComplex tmp0(0.0, 0.0);
-  register LatticeComplex tmp1(0.0, 0.0);
-  register LatticeComplex U[9];
-  register LatticeComplex src[12];
-  register LatticeComplex dest[12];
+  LatticeComplex *tmp_U;
+  LatticeComplex *tmp_src;
+  LatticeComplex tmp0(0.0, 0.0);
+  LatticeComplex tmp1(0.0, 0.0);
+  LatticeComplex U[9];
+  LatticeComplex src[12];
+  LatticeComplex dest[12];
+  // print_fermi(origin_U, 9);
+  // print_fermi(origin_src, 12);
   // just wilson(Sum part)
   give_value(dest, zero, 12);
   {
@@ -459,12 +449,13 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     }
   }
   give_ptr(origin_dest, dest, 12);
+  // print_fermi(dest, 12);
 }
 
-__global__ void clover(void *device_U, void *device_clover, int device_lat_x,
-                       const int device_lat_y, const int device_lat_z,
-                       const int device_lat_t, const int device_parity) {
-  register int parity = blockIdx.x * blockDim.x + threadIdx.x;
+void clover(void *device_U, void *device_clover, int device_lat_x,
+            const int device_lat_y, const int device_lat_z,
+            const int device_lat_t, const int device_parity) {
+  int parity;
   const int lat_x = device_lat_x;
   const int lat_y = device_lat_y;
   const int lat_z = device_lat_z;
@@ -473,32 +464,28 @@ __global__ void clover(void *device_U, void *device_clover, int device_lat_x,
   const int lat_yxcc = lat_y * lat_xcc;
   const int lat_zyxcc = lat_z * lat_yxcc;
   const int lat_tzyxcc = lat_t * lat_zyxcc;
-  register int move0;
-  register int move1;
-  move0 = lat_x * lat_y * lat_z;
-  const int t = parity / move0;
-  parity -= t * move0;
-  move0 = lat_x * lat_y;
-  const int z = parity / move0;
-  parity -= z * move0;
-  const int y = parity / lat_x;
-  const int x = parity - y * lat_x;
+  int move0;
+  int move1;
+  const int x = 0;
+  const int y = 0;
+  const int z = 0;
+  const int t = 0;
   const int oe = (y + z + t) % 2;
-  register LatticeComplex I(0.0, 1.0);
-  register LatticeComplex zero(0.0, 0.0);
-  register LatticeComplex tmp0(0.0, 0.0);
-  register LatticeComplex *origin_U =
+  LatticeComplex I(0.0, 1.0);
+  LatticeComplex zero(0.0, 0.0);
+  LatticeComplex tmp0(0.0, 0.0);
+  LatticeComplex *origin_U =
       ((static_cast<LatticeComplex *>(device_U)) + t * lat_zyxcc +
        z * lat_yxcc + y * lat_xcc + x * 9);
-  register LatticeComplex *origin_clover =
+  LatticeComplex *origin_clover =
       ((static_cast<LatticeComplex *>(device_clover)) + t * lat_zyxcc * 16 +
        z * lat_yxcc * 16 + y * lat_xcc * 16 + x * 144);
-  register LatticeComplex *tmp_U;
-  register LatticeComplex tmp1[9];
-  register LatticeComplex tmp2[9];
-  register LatticeComplex tmp3[9];
-  register LatticeComplex U[9];
-  register LatticeComplex clover[144];
+  LatticeComplex *tmp_U;
+  LatticeComplex tmp1[9];
+  LatticeComplex tmp2[9];
+  LatticeComplex tmp3[9];
+  LatticeComplex U[9];
+  LatticeComplex clover[144];
   // sigmaF
   {
     parity = device_parity;
@@ -514,10 +501,13 @@ __global__ void clover(void *device_U, void *device_clover, int device_lat_x,
     move0 = 0;
     tmp_U = (origin_U + parity * lat_tzyxcc);
     give_u(tmp1, tmp_U);
+    // print_fermi(tmp_U, 9);
+
     //// x+1,y,z,t;y
     move0 = (1 - (x == lat_x - 1) * lat_x) * (oe != parity);
     tmp_U = (origin_U + move0 * 9 + lat_tzyxcc * 2 + (1 - parity) * lat_tzyxcc);
     give_u(tmp2, tmp_U);
+    // print_fermi(tmp_U, 9);
     mult_u_none_none(tmp0, tmp1, tmp2, tmp3, zero);
   }
   {
@@ -1306,49 +1296,50 @@ __global__ void clover(void *device_U, void *device_clover, int device_lat_x,
       origin_clover[i] = clover[i];
     }
   }
+  // print_matrix(clover, 12);
+  // print_matrix(U, 3);
 }
 
-__global__ void give_clover(void *device_propagator, void *device_dest,
-                                     int device_lat_x, const int device_lat_y,
-                                     const int device_lat_z) {
+void give_clover(void *device_propagator, void *device_dest, int device_lat_x,
+                 const int device_lat_y, const int device_lat_z) {
   const int lat_x = device_lat_x;
   const int lat_y = device_lat_y;
   const int lat_z = device_lat_z;
-  register LatticeComplex zero(0.0, 0.0);
-  register LatticeComplex I(0.0, 1.0);
-  register LatticeComplex tmp0(0.0, 0.0);
-  register int tmp1;
-  register int tmp2 = blockIdx.x * blockDim.x + threadIdx.x;
-  tmp1 = lat_x * lat_y * lat_z;
-  const int t = tmp2 / tmp1;
-  tmp2 -= t * tmp1;
-  tmp1 = lat_x * lat_y;
-  const int z = tmp2 / tmp1;
-  tmp2 -= z * tmp1;
-  const int y = tmp2 / lat_x;
-  const int x = tmp2 - y * lat_x;
-  register LatticeComplex *origin_propagator =
+  const int x = 0;
+  const int y = 0;
+  const int z = 0;
+  const int t = 0;
+  LatticeComplex zero(0.0, 0.0);
+  LatticeComplex I(0.0, 1.0);
+  LatticeComplex tmp0(0.0, 0.0);
+  int tmp1;
+  int tmp2;
+  LatticeComplex *origin_propagator =
       ((static_cast<LatticeComplex *>(device_propagator)) +
        t * lat_z * lat_y * lat_x * 144 + z * lat_y * lat_x * 144 +
        y * lat_x * 144 + x * 144);
-  register LatticeComplex *origin_dest =
+  LatticeComplex *origin_dest =
       ((static_cast<LatticeComplex *>(device_dest)) +
        t * lat_z * lat_y * lat_x * 12 + z * lat_y * lat_x * 12 +
        y * lat_x * 12 + x * 12);
-  register LatticeComplex input_propagator[144];
-  register LatticeComplex propagator[144];
-  register LatticeComplex augmented_propagator[288];
-  register LatticeComplex pivot;
-  register LatticeComplex factor;
-  register LatticeComplex dest[12];
-  register LatticeComplex tmp[12];
+  LatticeComplex input_propagator[144];
+  LatticeComplex propagator[144];
+  LatticeComplex augmented_propagator[288];
+  LatticeComplex pivot;
+  LatticeComplex factor;
+  LatticeComplex dest[12];
+  LatticeComplex tmp[12];
+  // print_fermi(origin_propagator, 144);
+  printf("###########################\n");
   give_ptr(input_propagator, origin_propagator, 144);
-  give_ptr(dest, origin_dest, 12);
+  give_value(augmented_propagator, zero, 288);
+  // give_ptr(dest, origin_dest, 12);
   inverse(input_propagator, propagator, augmented_propagator, pivot, factor,
           12);
+  // print_fermi(propagator, 144);
+  give_ptr(input_propagator, propagator, 144);
   give_value(tmp, zero, 12);
   {
-    give_ptr(input_propagator, propagator, 144);
     for (int sc0 = 0; sc0 < 12; sc0++) {
       for (int sc1 = 0; sc1 < 12; sc1++) {
         tmp0 = zero;
@@ -1356,10 +1347,10 @@ __global__ void give_clover(void *device_propagator, void *device_dest,
           tmp0 += input_propagator[sc0 * 12 + scsc] *
                   origin_propagator[scsc * 12 + sc1];
         }
+        printf("(%.d,%.d):(%.16lf,%.16lf)\n", sc0, sc1, tmp0.real, tmp0.imag);
         propagator[sc0 * 12 + sc1] = tmp0;
       }
     }
-    give_ptr(origin_dest, propagator, 12);
   }
   {
     for (int sc0 = 0; sc0 < 12; sc0++) {
@@ -1373,70 +1364,59 @@ __global__ void give_clover(void *device_propagator, void *device_dest,
   }
 }
 
-void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
-               QcuParam *param, int parity) {
-  int lat_x = param->lattice_size[0] >> 1;
-  int lat_y = param->lattice_size[1];
-  int lat_z = param->lattice_size[2];
-  int lat_t = param->lattice_size[3];
-  void *propagator;
-  checkCudaErrors(
-      cudaMalloc(&propagator, (lat_t * lat_z * lat_y * lat_x * 144) *
-                                  sizeof(LatticeComplex)));
-  cudaError_t err;
-  dim3 gridDim(lat_x * lat_y * lat_z * lat_t / BLOCK_SIZE);
-  dim3 blockDim(BLOCK_SIZE);
+int main() {
+  int lat_x = 1;
+  int lat_y = 1;
+  int lat_z = 1;
+  int lat_t = 1;
+  int parity = 1;
+  LatticeComplex gauge[18 * 4];
+  LatticeComplex fermion_in[12];
+  LatticeComplex fermion_out[12];
+  LatticeComplex propagator[144];
+  {
+    give_rand(gauge, 18 * 4);
+    give_rand(fermion_in, 12);
+    // print_fermi(gauge, 18);
+    // print_fermi(fermion_in, 12);
+  }
   {
     // wilson dslash
-    checkCudaErrors(cudaDeviceSynchronize());
     auto start = std::chrono::high_resolution_clock::now();
-    dslash<<<gridDim, blockDim>>>(gauge, fermion_in, fermion_out, lat_x, lat_y,
-                                  lat_z, lat_t, parity);
-    err = cudaGetLastError();
-    checkCudaErrors(err);
-    checkCudaErrors(cudaDeviceSynchronize());
+    dslash(gauge, fermion_in, fermion_out, lat_x, lat_y, lat_z, lat_t, parity);
     auto end = std::chrono::high_resolution_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
             .count();
     printf(
-        "wilson dslash total time: (without malloc free memcpy) : %.9lf sec\n",
+        "wilson dslash total time: (without malloc free memcpy) : %.16lf sec\n",
         double(duration) / 1e9);
+    // print_fermi(fermion_out, 12);
   }
   {
     // just clover
-    checkCudaErrors(cudaDeviceSynchronize());
     auto start = std::chrono::high_resolution_clock::now();
-    clover<<<gridDim, blockDim>>>(gauge, propagator, lat_x, lat_y, lat_z, lat_t,
-                                  parity);
-    err = cudaGetLastError();
-    checkCudaErrors(err);
-    checkCudaErrors(cudaDeviceSynchronize());
+    clover(gauge, (void *)propagator, lat_x, lat_y, lat_z, lat_t, parity);
+
     auto end = std::chrono::high_resolution_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
             .count();
-    printf("just clover total time: (without malloc free memcpy) :%.9lf sec\n ",
-           double(duration) / 1e9);
+    printf(
+        "just clover total time: (without malloc free memcpy) :%.16lf sec\n ",
+        double(duration) / 1e9);
   }
   {
     // give clover
-    checkCudaErrors(cudaDeviceSynchronize());
     auto start = std::chrono::high_resolution_clock::now();
-    give_clover<<<gridDim, blockDim>>>(propagator, fermion_out, lat_x, lat_y,
-                                       lat_z);
-    err = cudaGetLastError();
-    checkCudaErrors(err);
-    checkCudaErrors(cudaDeviceSynchronize());
+    give_clover((void *)propagator, fermion_out, lat_x, lat_y, lat_z);
     auto end = std::chrono::high_resolution_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
             .count();
-    printf("give clover total time: (without malloc free memcpy) :%.9lf sec\n ",
-           double(duration) / 1e9);
+    printf(
+        "give clover total time: (without malloc free memcpy) :%.16lf sec\n ",
+        double(duration) / 1e9);
   }
-  {
-    // free
-    checkCudaErrors(cudaFree(propagator));
-  }
+  return 0;
 }

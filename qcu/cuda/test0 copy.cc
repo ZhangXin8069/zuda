@@ -9,34 +9,66 @@ using namespace std;
 
 typedef complex<double> Complex;
 
-#define inverse(inputMatrix, inverseMatrix, augmentedMatrix, size)             \
+// #define inverse(inputMatrix, inverseMatrix, augmentedMatrix, size)             \
+//   {                                                                            \
+//     for (int i = 0; i < size; ++i) {                                           \
+//       for (int j = 0; j < size; ++j) {                                         \
+//         inverseMatrix[i * size + j] = inputMatrix[i * size + j];               \
+//         augmentedMatrix[i * 2 * size + j] = inverseMatrix[i * size + j];       \
+//       }                                                                        \
+//       augmentedMatrix[i * 2 * size + size + i] = 1.0;                          \
+//     }                                                                          \
+//     for (int i = 0; i < size; ++i) {                                           \
+//       Complex pivot = augmentedMatrix[i * 2 * size + i];                       \
+//       for (int j = 0; j < 2 * size; ++j) {                                     \
+//         augmentedMatrix[i * 2 * size + j] /= pivot;                            \
+//       }                                                                        \
+//       for (int j = 0; j < size; ++j) {                                         \
+//         if (j != i) {                                                          \
+//           Complex factor = augmentedMatrix[j * 2 * size + i];                  \
+//           for (int k = 0; k < 2 * size; ++k) {                                 \
+//             augmentedMatrix[j * 2 * size + k] -=                               \
+//                 factor * augmentedMatrix[i * 2 * \size + k];                   \
+//           }                                                                    \
+//         }                                                                      \
+//       }                                                                        \
+//     }                                                                          \
+//     for (int i = 0; i < size; ++i) {                                           \
+//       for (int j = 0; j < size; ++j) {                                         \
+//         inverseMatrix[i * size + j] =                                          \
+//             augmentedMatrix[i * 2 * size + size + j];                          \
+//       }                                                                        \
+//     }                                                                          \
+//   }
+#define inverse(input_matrix, inverse_matrix, augmented_matrix, pivot, factor, \
+                size)                                                          \
   {                                                                            \
     for (int i = 0; i < size; ++i) {                                           \
       for (int j = 0; j < size; ++j) {                                         \
-        inverseMatrix[i * size + j] = inputMatrix[i * size + j];               \
-        augmentedMatrix[i * 2 * size + j] = inverseMatrix[i * size + j];       \
+        inverse_matrix[i * size + j] = input_matrix[i * size + j];             \
+        augmented_matrix[i * 2 * size + j] = inverse_matrix[i * size + j];     \
       }                                                                        \
-      augmentedMatrix[i * 2 * size + size + i] = 1.0;                          \
+      augmented_matrix[i * 2 * size + size + i] = 1.0;                         \
     }                                                                          \
     for (int i = 0; i < size; ++i) {                                           \
-      Complex pivot = augmentedMatrix[i * 2 * size + i];                       \
+      pivot = augmented_matrix[i * 2 * size + i];                              \
       for (int j = 0; j < 2 * size; ++j) {                                     \
-        augmentedMatrix[i * 2 * size + j] /= pivot;                            \
+        augmented_matrix[i * 2 * size + j] /= pivot;                           \
       }                                                                        \
       for (int j = 0; j < size; ++j) {                                         \
         if (j != i) {                                                          \
-          Complex factor = augmentedMatrix[j * 2 * size + i];                  \
+          factor = augmented_matrix[j * 2 * size + i];                         \
           for (int k = 0; k < 2 * size; ++k) {                                 \
-            augmentedMatrix[j * 2 * size + k] -=                               \
-                factor * augmentedMatrix[i * 2 * \size + k];                   \
+            augmented_matrix[j * 2 * size + k] -=                              \
+                factor * augmented_matrix[i * 2 * size + k];                   \
           }                                                                    \
         }                                                                      \
       }                                                                        \
     }                                                                          \
     for (int i = 0; i < size; ++i) {                                           \
       for (int j = 0; j < size; ++j) {                                         \
-        inverseMatrix[i * size + j] =                                          \
-            augmentedMatrix[i * 2 * size + size + j];                          \
+        inverse_matrix[i * size + j] =                                         \
+            augmented_matrix[i * 2 * size + size + j];                         \
       }                                                                        \
     }                                                                          \
   }

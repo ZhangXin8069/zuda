@@ -1,3 +1,4 @@
+#include <chrono>
 #include <complex>
 #include <cstdlib>
 #include <ctime>
@@ -56,13 +57,48 @@ void gaussJordanInverse(const Complex *inputMatrix, Complex *inverseMatrix,
     }
   }
 }
+#define inverse(input_matrix, inverse_matrix, augmented_matrix, pivot, factor, \
+                size)                                                          \
+  {                                                                            \
+    for (int i = 0; i < size; ++i) {                                           \
+      for (int j = 0; j < size; ++j) {                                         \
+        inverse_matrix[i * size + j] = input_matrix[i * size + j];             \
+        augmented_matrix[i * 2 * size + j] = inverse_matrix[i * size + j];     \
+      }                                                                        \
+      augmented_matrix[i * 2 * size + size + i] = 1.0;                         \
+    }                                                                          \
+    for (int i = 0; i < size; ++i) {                                           \
+      pivot = augmented_matrix[i * 2 * size + i];                              \
+      for (int j = 0; j < 2 * size; ++j) {                                     \
+        augmented_matrix[i * 2 * size + j] /= pivot;                           \
+      }                                                                        \
+      for (int j = 0; j < size; ++j) {                                         \
+        if (j != i) {                                                          \
+          factor = augmented_matrix[j * 2 * size + i];                         \
+          for (int k = 0; k < 2 * size; ++k) {                                 \
+            augmented_matrix[j * 2 * size + k] -=                              \
+                factor * augmented_matrix[i * 2 * size + k];                   \
+          }                                                                    \
+        }                                                                      \
+      }                                                                        \
+    }                                                                          \
+    for (int i = 0; i < size; ++i) {                                           \
+      for (int j = 0; j < size; ++j) {                                         \
+        inverse_matrix[i * size + j] =                                         \
+            augmented_matrix[i * 2 * size + size + j];                         \
+      }                                                                        \
+    }                                                                          \
+  }
 
 int main() {
   srand(time(0));
 
-  int size = 20; // 矩阵大小为3x3
+  int size = 12; // 矩阵大小为3x3
   Complex inputMatrix[size * size];
   Complex inverseMatrix[size * size];
+  Complex augmentedMatrixMatrix[size * size * 2];
+  Complex pivot;
+  Complex factor;
 
   // 生成随机复数矩阵
   for (int i = 0; i < size * size; ++i) {
@@ -75,7 +111,18 @@ int main() {
   printMatrix(inputMatrix, size, size);
 
   // 求逆矩阵
-  gaussJordanInverse(inputMatrix, inverseMatrix, size);
+  auto start = std::chrono::high_resolution_clock::now();
+  // gaussJordanInverse(inputMatrix, inverseMatrix, size);
+  inverse(inputMatrix, inverseMatrix, augmentedMatrixMatrix, pivot, factor,
+          size);
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+  printf("gaussJordanInverse total time: (without malloc "
+         "free memcpy) : "
+         "%.9lf "
+         "sec\n",
+         double(duration) / 1e9);
 
   cout << "\nInverse Matrix:" << endl;
   printMatrix(inverseMatrix, size, size);
