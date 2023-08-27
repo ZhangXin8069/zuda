@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <limits>
+#include <sys/types.h>
 #pragma nv_verbose
 #pragma optimize(5)
 #include "qcu.h"
@@ -19,13 +20,18 @@
       exit(-1);                                                                \
     }                                                                          \
   }
-#define give(U, zero, n)                                                       \
+#define give_value(U, zero, n)                                                 \
   {                                                                            \
     for (int i = 0; i < n; i++) {                                              \
       U[i] = zero;                                                             \
     }                                                                          \
   }
-
+#define give_ptr(U, origin_U, n)                                               \
+  {                                                                            \
+    for (int i = 0; i < n; i++) {                                              \
+      U[i] = origin_U[i];                                                      \
+    }                                                                          \
+  }
 #define add(U, tmp, n)                                                         \
   {                                                                            \
     for (int i = 0; i < n; i++) {                                              \
@@ -95,7 +101,8 @@
     }                                                                          \
   }
 
-#define inverse(input_matrix, inverse_matrix, augmented_matrix, size)          \
+#define inverse(input_matrix, inverse_matrix, augmented_matrix, pivot, factor, \
+                size)                                                          \
   {                                                                            \
     for (int i = 0; i < size; ++i) {                                           \
       for (int j = 0; j < size; ++j) {                                         \
@@ -105,16 +112,16 @@
       augmented_matrix[i * 2 * size + size + i] = 1.0;                         \
     }                                                                          \
     for (int i = 0; i < size; ++i) {                                           \
-      Complex pivot = augmented_matrix[i * 2 * size + i];                      \
+      pivot = augmented_matrix[i * 2 * size + i];                              \
       for (int j = 0; j < 2 * size; ++j) {                                     \
         augmented_matrix[i * 2 * size + j] /= pivot;                           \
       }                                                                        \
       for (int j = 0; j < size; ++j) {                                         \
         if (j != i) {                                                          \
-          Complex factor = augmented_matrix[j * 2 * size + i];                 \
+          factor = augmented_matrix[j * 2 * size + i];                         \
           for (int k = 0; k < 2 * size; ++k) {                                 \
             augmented_matrix[j * 2 * size + k] -=                              \
-                factor * augmented_matrix[i * 2 * \size + k];                  \
+                factor * augmented_matrix[i * 2 * size + k];                   \
           }                                                                    \
         }                                                                      \
       }                                                                        \
@@ -271,14 +278,14 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
   register LatticeComplex src[12];
   register LatticeComplex dest[12];
   // just wilson(Sum part)
-  give(dest, zero, 12);
+  give_value(dest, zero, 12);
   {
     // x-1
     move = (-1 + (x == 0) * lat_x) * (oe == parity);
     tmp_U = (origin_U + move * 9 + (1 - parity) * lat_tzyxcc);
     give_u(U, tmp_U);
     tmp_src = (origin_src + move * 12);
-    give(src, tmp_src, 12);
+    give_ptr(src, tmp_src, 12);
   }
   {
     for (int c0 = 0; c0 < 3; c0++) {
@@ -300,7 +307,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     tmp_U = (origin_U + parity * lat_tzyxcc);
     give_u(U, tmp_U);
     tmp_src = (origin_src + move * 12);
-    give(src, tmp_src, 12);
+    give_ptr(src, tmp_src, 12);
   }
   {
     for (int c0 = 0; c0 < 3; c0++) {
@@ -323,7 +330,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
              (1 - parity) * lat_tzyxcc);
     give_u(U, tmp_U);
     tmp_src = (origin_src + move * lat_xsc);
-    give(src, tmp_src, 12);
+    give_ptr(src, tmp_src, 12);
   }
   {
     for (int c0 = 0; c0 < 3; c0++) {
@@ -345,7 +352,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     tmp_U = (origin_U + lat_tzyxcc * 2 + parity * lat_tzyxcc);
     give_u(U, tmp_U);
     tmp_src = (origin_src + move * lat_xsc);
-    give(src, tmp_src, 12);
+    give_ptr(src, tmp_src, 12);
   }
   {
     for (int c0 = 0; c0 < 3; c0++) {
@@ -368,7 +375,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
              (1 - parity) * lat_tzyxcc);
     give_u(U, tmp_U);
     tmp_src = (origin_src + move * lat_yxsc);
-    give(src, tmp_src, 12);
+    give_ptr(src, tmp_src, 12);
   }
   {
     for (int c0 = 0; c0 < 3; c0++) {
@@ -390,7 +397,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     tmp_U = (origin_U + lat_tzyxcc * 4 + parity * lat_tzyxcc);
     give_u(U, tmp_U);
     tmp_src = (origin_src + move * lat_yxsc);
-    give(src, tmp_src, 12);
+    give_ptr(src, tmp_src, 12);
   }
   {
     for (int c0 = 0; c0 < 3; c0++) {
@@ -413,7 +420,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
              (1 - parity) * lat_tzyxcc);
     give_u(U, tmp_U);
     tmp_src = (origin_src + move * lat_zyxsc);
-    give(src, tmp_src, 12);
+    give_ptr(src, tmp_src, 12);
   }
   {
     for (int c0 = 0; c0 < 3; c0++) {
@@ -435,7 +442,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
     tmp_U = (origin_U + lat_tzyxcc * 6 + parity * lat_tzyxcc);
     give_u(U, tmp_U);
     tmp_src = (origin_src + move * lat_zyxsc);
-    give(src, tmp_src, 12);
+    give_ptr(src, tmp_src, 12);
   }
   {
     for (int c0 = 0; c0 < 3; c0++) {
@@ -451,7 +458,7 @@ __global__ void dslash(void *device_U, void *device_src, void *device_dest,
       dest[c0 + 9] -= tmp1;
     }
   }
-  give(origin_dest, dest, 12);
+  give_ptr(origin_dest, dest, 12);
 }
 
 __global__ void clover(void *device_U, void *device_clover, int device_lat_x,
@@ -495,13 +502,13 @@ __global__ void clover(void *device_U, void *device_clover, int device_lat_x,
   // sigmaF
   {
     parity = device_parity;
-    give(clover, zero, 144);
-    give(origin_clover, zero, 144);
-    give(tmp1, zero, 9);
-    give(tmp2, zero, 9);
+    give_value(clover, zero, 144);
+    give_value(origin_clover, zero, 144);
+    give_value(tmp1, zero, 9);
+    give_value(tmp2, zero, 9);
   }
   // XY
-  give(U, zero, 9);
+  give_value(U, zero, 9);
   {
     //// x,y,z,t;x
     move0 = 0;
@@ -628,7 +635,7 @@ __global__ void clover(void *device_U, void *device_clover, int device_lat_x,
     }
   }
   // XZ
-  give(U, zero, 9);
+  give_value(U, zero, 9);
   {
     //// x,y,z,t;x
     move0 = 0;
@@ -754,7 +761,7 @@ __global__ void clover(void *device_U, void *device_clover, int device_lat_x,
     }
   }
   // XT
-  give(U, zero, 9);
+  give_value(U, zero, 9);
   {
     //// x,y,z,t;x
     move0 = 0;
@@ -881,7 +888,7 @@ __global__ void clover(void *device_U, void *device_clover, int device_lat_x,
     }
   }
   // YZ
-  give(U, zero, 9);
+  give_value(U, zero, 9);
   {
     //// x,y,z,t;y
     move0 = 0;
@@ -1017,7 +1024,7 @@ __global__ void clover(void *device_U, void *device_clover, int device_lat_x,
     }
   }
   // YT
-  give(U, zero, 9);
+  give_value(U, zero, 9);
   {
     //// x,y,z,t;y
     move0 = 0;
@@ -1152,7 +1159,7 @@ __global__ void clover(void *device_U, void *device_clover, int device_lat_x,
   }
 
   // ZT
-  give(U, zero, 9);
+  give_value(U, zero, 9);
   {
     //// x,y,z,t;z
     move0 = 0;
@@ -1300,15 +1307,13 @@ __global__ void clover(void *device_U, void *device_clover, int device_lat_x,
     }
   }
 }
-__global__ void give_clover(void *device_propagator, void *device_src,
-                            void *device_dest, int device_lat_x,
-                            const int device_lat_y, const int device_lat_z,
-                            const int device_lat_t, const int device_parity) {
+
+__global__ void give_clover(void *device_propagator, void *device_dest,
+                            int device_lat_x, const int device_lat_y,
+                            const int device_lat_z) {
   const int lat_x = device_lat_x;
   const int lat_y = device_lat_y;
   const int lat_z = device_lat_z;
-  const int lat_t = device_lat_t;
-  const int parity = device_parity;
   register LatticeComplex zero(0.0, 0.0);
   register LatticeComplex I(0.0, 1.0);
   register LatticeComplex tmp0(0.0, 0.0);
@@ -1326,38 +1331,46 @@ __global__ void give_clover(void *device_propagator, void *device_src,
       ((static_cast<LatticeComplex *>(device_propagator)) +
        t * lat_z * lat_y * lat_x * 144 + z * lat_y * lat_x * 144 +
        y * lat_x * 144 + x * 144);
-  register LatticeComplex *origin_src =
-      ((static_cast<LatticeComplex *>(device_src)) +
-       t * lat_z * lat_y * lat_x * 12 + z * lat_y * lat_x * 12 +
-       y * lat_x * 12 + x * 12 +
-       (parity * 2 - 1) * lat_t * lat_z * lat_y * lat_x * 12);
   register LatticeComplex *origin_dest =
       ((static_cast<LatticeComplex *>(device_dest)) +
        t * lat_z * lat_y * lat_x * 12 + z * lat_y * lat_x * 12 +
        y * lat_x * 12 + x * 12);
+  register LatticeComplex input_propagator[144];
   register LatticeComplex propagator[144];
-  register LatticeComplex src[12];
+  register LatticeComplex augmented_propagator[288];
+  register LatticeComplex pivot;
+  register LatticeComplex factor;
   register LatticeComplex dest[12];
   register LatticeComplex tmp[12];
-  give(propagator, origin_propagator, 144);
-  give(src, origin_src, 12);
-  give(dest, origin_dest, 12);
-  give(tmp, zero, 12);
+  give_ptr(input_propagator, origin_propagator, 144);
+  give_ptr(dest, origin_dest, 12);
+  inverse(input_propagator, propagator, augmented_propagator, pivot, factor,
+          12);
+  give_value(tmp, zero, 12);
+  {
+    give_ptr(input_propagator, propagator, 144);
+    for (int sc0 = 0; sc0 < 12; sc0++) {
+      for (int sc1 = 0; sc1 < 12; sc1++) {
+        tmp0 = zero;
+        for (int scsc = 0; scsc < 12; scsc++) {
+          tmp0 += input_propagator[sc0 * 12 + scsc] *
+                  origin_propagator[scsc * 12 + sc1];
+        }
+        propagator[sc0 * 12 + sc1] = tmp0;
+      }
+    }
+    give_ptr(origin_dest, propagator, 12);
+  }
   {
     for (int sc0 = 0; sc0 < 12; sc0++) {
       tmp0 = zero;
       for (int sc1 = 0; sc1 < 12; sc1++) {
-        tmp0 += propagator[sc0 * 12 + sc1] * src[sc1];
+        tmp0 += propagator[sc0 * 12 + sc1] * dest[sc1];
       }
       tmp[sc0] = tmp0;
     }
+    give_ptr(origin_dest, tmp, 12);
   }
-  {
-    for (int i = 0; i < 12; i++) {
-      dest[i] = src[i] - dest[i] - tmp[i] * 0.125;
-    }
-  }
-  give(origin_dest, dest, 12);
 }
 
 void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
@@ -1386,60 +1399,44 @@ void dslashQcu(void *fermion_out, void *fermion_in, void *gauge,
     auto duration =
         std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
             .count();
-    printf("wilson dslash total time: (without malloc "
-           "free memcpy) : "
-           "%.9lf "
-           "sec\n",
-           double(duration) / 1e9);
+    printf(
+        "wilson dslash total time: (without malloc free memcpy) : %.9lf sec\n",
+        double(duration) / 1e9);
   }
-  //  {
-  //    // just clover
-  //    checkCudaErrors(cudaDeviceSynchronize());
-  //    auto start =
-  //    std::chrono::high_resolution_clock::now();
-  //    clover<<<gridDim, blockDim>>>(gauge, propagator,
-  //    lat_x, lat_y, lat_z, lat_t,
-  //                                  parity);
-  //    err = cudaGetLastError();
-  //    checkCudaErrors(err);
-  //    checkCudaErrors(cudaDeviceSynchronize());
-  //    auto end =
-  //    std::chrono::high_resolution_clock::now(); auto
-  //    duration =
-  //        std::chrono::duration_cast<std::chrono::nanoseconds>(end
-  //        - start)
-  //            .count();
-  //    printf("just clover total time: (without malloc
-  //    free memcpy) :
-  //    %.9lf sec\n",
-  //           double(duration) / 1e9);
-  //  }
-  //  {
-  //    // give clover
-  //    checkCudaErrors(cudaDeviceSynchronize());
-  //    auto start =
-  //    std::chrono::high_resolution_clock::now();
-  //    give_clover<<<gridDim, blockDim>>>(propagator,
-  //    fermion_in, fermion_out,
-  //                                       lat_x, lat_y,
-  //                                       lat_z, lat_t,
-  //                                       parity);
-  //    err = cudaGetLastError();
-  //    checkCudaErrors(err);
-  //    checkCudaErrors(cudaDeviceSynchronize());
-  //    auto end =
-  //    std::chrono::high_resolution_clock::now(); auto
-  //    duration =
-  //        std::chrono::duration_cast<std::chrono::nanoseconds>(end
-  //        - start)
-  //            .count();
-  //    printf("give clover total time: (without malloc
-  //    free memcpy) :
-  //    %.9lf sec\n",
-  //           double(duration) / 1e9);
-  //  }
-  {
-    // free
-    checkCudaErrors(cudaFree(propagator));
-  }
+  // {
+  //   // just clover
+  //   checkCudaErrors(cudaDeviceSynchronize());
+  //   auto start = std::chrono::high_resolution_clock::now();
+  //   clover<<<gridDim, blockDim>>>(gauge, propagator, lat_x, lat_y, lat_z, lat_t,
+  //                                 parity);
+  //   err = cudaGetLastError();
+  //   checkCudaErrors(err);
+  //   checkCudaErrors(cudaDeviceSynchronize());
+  //   auto end = std::chrono::high_resolution_clock::now();
+  //   auto duration =
+  //       std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
+  //           .count();
+  //   printf("just clover total time: (without malloc free memcpy) :%.9lf sec\n ",
+  //          double(duration) / 1e9);
+  // }
+  // {
+  //   // give clover
+  //   checkCudaErrors(cudaDeviceSynchronize());
+  //   auto start = std::chrono::high_resolution_clock::now();
+  //   give_clover<<<gridDim, blockDim>>>(propagator, fermion_out, lat_x, lat_y,
+  //                                      lat_z);
+  //   err = cudaGetLastError();
+  //   checkCudaErrors(err);
+  //   checkCudaErrors(cudaDeviceSynchronize());
+  //   auto end = std::chrono::high_resolution_clock::now();
+  //   auto duration =
+  //       std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
+  //           .count();
+  //   printf("give clover total time: (without malloc free memcpy) :%.9lf sec\n ",
+  //          double(duration) / 1e9);
+  // }
+  // {
+  //   // free
+  //   checkCudaErrors(cudaFree(propagator));
+  // }
 }
